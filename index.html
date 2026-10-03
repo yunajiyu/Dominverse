@@ -4,10 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DOHYUNYUMIN</title>
+<link rel="icon" id="siteFavicon" href="data:,">
 <script>
 /* 새로고침 시 기본 화면(기본 색·문구·폰트)이 잠깐 보이는 것을 막기 위해,
    관리자 설정이 적용될 때까지 화면을 숨겼다가 부드럽게 보여줍니다. (최대 2.5초 후에는 무조건 표시) */
 document.documentElement.classList.add('dv-boot');
+try{ var _fv = localStorage.getItem('dv_favicon'); if(_fv){ document.addEventListener('DOMContentLoaded', function(){ var l = document.getElementById('siteFavicon'); if(l) l.href = _fv; }); } }catch(e){}
 window.dvReveal = function(){ document.documentElement.classList.remove('dv-boot'); };
 setTimeout(window.dvReveal, 2500);
 /* 로딩 화면: 관리자에서 등록한 로고/문구(이전 방문 때 저장해 둔 값)가 있으면 표시, 없으면 스피너 */
@@ -1554,6 +1556,16 @@ async function loadAnniversary(){
   }catch(e){ /* 무시 */ }
 }
 
+// 파비콘 (관리자 > 메인 화면 이미지 > ⑥ 파비콘). 다음 방문 때 바로 보이도록 localStorage에도 저장
+async function loadFavicon(){
+  try{
+    const items = await dbSelect('site_favicon');
+    const url = items[0] && items[0].image_url;
+    const l = document.getElementById('siteFavicon');
+    if(url){ if(l) l.href = url; localStorage.setItem('dv_favicon', url); }
+    else { localStorage.removeItem('dv_favicon'); }
+  }catch(e){ /* 무시 */ }
+}
 async function loadLoadingLogo(){
   try{
     const items = await dbSelect('loading_logo');
@@ -1565,7 +1577,7 @@ async function loadLoadingLogo(){
 // 글쓰기 버튼은 관리자에 로그인한 적 있는 이 브라우저에서만 보임 (같은 주소의 관리자 페이지에서 로그인하면 저장됨)
 try{ if(localStorage.getItem('dv_admin_authed') === 'yes'){ const w = document.getElementById('writeBtn'); if(w) w.hidden = false; } }catch(e){}
 const BOOT_TASKS = [
-  loadLoadingLogo(), loadMainProfile(),
+  loadLoadingLogo(), loadMainProfile(), loadFavicon(),
   loadPageBackground(), loadMainImage(), loadStickerBg(), loadMenuThumb(), loadMenuCards(),
   loadStickers(), loadContentTop(), loadProfiles(), loadProfileCommon(), loadNovel(), loadGallery(),
   loadBGM(), loadAnniversary(), loadTheme(), loadFont(), TEXT_READY
