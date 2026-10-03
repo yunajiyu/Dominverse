@@ -384,6 +384,33 @@ body{
         <p class="desc" style="margin-top:8px">※ 파비콘은 브라우저가 따로 보관해서, 저장 후 사이트를 새로고침해도 바로 안 바뀔 수 있어요(탭을 닫았다 다시 열면 바뀝니다).</p>
       </div>
       <div class="list" id="list-site_favicon"></div>
+
+      <div class="sub-title">⑦ 링크 미리보기 (카카오톡·디스코드·트위터 등에 링크를 붙일 때 보이는 이미지·제목·설명)</div>
+      <div class="card" data-section="site_og">
+        <h3 id="og-form-title">링크 미리보기 설정</h3>
+        <input type="hidden" id="og-id">
+        <div class="field-row">
+          <div class="field full">
+            <label>미리보기 이미지 URL (또는 아래에서 파일 선택) — 가로로 긴 1200×630px(약 1.9:1) 권장, 용량 1MB 이하</label>
+            <input id="og-image" placeholder="https://...">
+            <div class="upload-row">
+              <input type="file" id="og-file" accept="image/*">
+              <span class="upload-status" id="og-file-status"></span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>제목 (비우면 사이트 제목 DOHYUNYUMIN)</label><input id="og-title" placeholder="예: DOHYUNYUMIN"></div>
+          <div class="field"><label>설명 (한두 줄)</label><input id="og-desc" placeholder="예: 박도현 × 유민 기록 공간"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('site_og')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('site_og')">취소</button>
+        </div>
+        <div class="status" id="og-status"></div>
+        <p class="desc" style="margin-top:8px">※ 링크 미리보기는 메신저·SNS가 사이트의 원본 HTML을 읽어 가는 것이라, 저장하자마자 바뀌지 않아요. 저장하면 <b>매시간 자동으로</b> 사이트에 반영돼요(GitHub 저장소의 Actions → <b>Sync OG</b> → <b>Run workflow</b>로 바로 반영할 수도 있어요). 이미 공유된 링크의 미리보기는 메신저가 보관하고 있어서 한동안 이전 모습이 보일 수 있어요(카카오는 카카오 디벨로퍼스 "공유 디버거"에서 캐시를 지울 수 있어요).</p>
+      </div>
+      <div class="list" id="list-site_og"></div>
     </div>
 
     <!-- 프로필 -->
@@ -1032,6 +1059,7 @@ document.getElementById('sk-walk-file').addEventListener('change', e=>{ const f 
 wireFileUpload('mp-file', 'mp-image', 'mp-file-status', 'mainprofile');
 wireFileUpload('ld-file', 'ld-image', 'ld-file-status', 'loading');
 wireFileUpload('fv-file', 'fv-image', 'fv-file-status', 'favicon');
+wireFileUpload('og-file', 'og-image', 'og-file-status', 'og');
 function updateFvPreview(){
   const u = document.getElementById('fv-image').value.trim();
   const im = document.getElementById('fvPreviewImg');
@@ -1286,6 +1314,14 @@ const SECTIONS = {
     idEl:'fv-id', statusEl:'fv-status', titleEl:'fv-form-title',
     render: (it)=> renderRow(it, '파비콘', it.image_url || '')
   },
+  site_og:{
+    fields:['image_url','title','summary','sort_order'],
+    // 링크 미리보기(OG): image_url = 이미지, title = 제목, summary = 설명
+    read: ()=>({ image_url: val('og-image'), title: val('og-title'), summary: val('og-desc'), sort_order: 0 }),
+    fill: (it)=>{ setval('og-image',it.image_url); setval('og-title',it.title); setval('og-desc',it.summary); },
+    idEl:'og-id', statusEl:'og-status', titleEl:'og-form-title',
+    render: (it)=> renderRow(it, it.title || '링크 미리보기', it.summary || '')
+  },
   loading_logo:{
     fields:['image_url','title','sort_order'],
     read: ()=>({ image_url: val('ld-image'), title: val('ld-title'), sort_order: numval('ld-order') }),
@@ -1466,6 +1502,10 @@ async function submitItem(section){
   }
   if(section==='profile_common' && !idEl.value){   // 영역마다 1개: 같은 영역이 있으면 그 항목을 수정
     const ex = (CACHE.profile_common||[]).find(x=>x.category===row.category);
+    if(ex) idEl.value = ex.id;
+  }
+  if(section==='site_og' && !idEl.value){   // 링크 미리보기는 1개만: 이미 있으면 그 항목을 교체
+    const ex = (CACHE.site_og||[])[0];
     if(ex) idEl.value = ex.id;
   }
   if(section==='site_favicon' && !idEl.value){   // 파비콘은 1개만: 이미 있으면 그 항목을 교체
