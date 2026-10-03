@@ -305,6 +305,9 @@ body{
 .profile-card{ display:flex; gap:16px; border:1px solid var(--line); border-radius:12px; padding:16px; background:#fffefb; }
 .profile-card .photo{ width:110px; height:110px; border-radius:10px; background:var(--paper-dim); flex-shrink:0; }
 .profile-stats{ margin-top:10px; font-size:12px; color:var(--ink-soft); display:grid; gap:4px; }
+/* 프로필 탭: 연한 회색 1px 단색 라인 (그림자 없음) */
+.pill-tab, .profile-card, .profile-card .photo{ border:1px solid #c7c9d1; box-shadow:none; }
+.pill-tab.active{ border-color:var(--accent); }
 
 /* 소설 탭: 장르 필터 칩 + 검색 + 회차 목록 */
 .nv-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
@@ -522,6 +525,8 @@ body{
   .book-rings{ display:none; }
   .profile-col{ display:none; }
   .center-col{ border-radius:0; box-shadow:none; padding:12px; }
+  .center-col:not([data-tab="main"]){ padding:8px; }   /* 프로필·소설·갤러리: 콘텐츠 영역을 넓히기 위해 바깥 패딩 12 → 8 */
+  .profile-card{ padding:10px; gap:12px; }   /* 프로필 카드 안쪽 패딩 16 → 10 */
   .nv-row{ gap:10px; padding:14px 4px; }
   .nv-body{ padding:50px 16px 20px; }
   .book-wrap::before{ display:none; }
@@ -619,7 +624,7 @@ body{
         <div class="book-rings"><span></span><span></span><span></span><span></span><span></span></div>
 
         <!-- 오른쪽 페이지: 콘텐츠 -->
-        <div class="center-col">
+        <div class="center-col" data-tab="main">
 
         <div class="content-section active" data-content="main">
           <div class="menu-label" data-t="menu_label">menu</div>
@@ -780,6 +785,7 @@ function t(key, def){ return TEXTS[key] || def; }
 //  탭 전환 (사이드 nav + 모바일 탭바 공용)
 // ══════════════════════════════════════
 function openTab(id){
+  const cc = document.querySelector('.center-col'); if(cc) cc.dataset.tab = id;
   document.querySelectorAll('.content-section').forEach(sec=>sec.classList.toggle('active', sec.dataset.content===id));
   document.querySelectorAll('.menu-card').forEach(b=>b.classList.toggle('active', b.dataset.open===id));
   document.querySelectorAll('.mobile-tabbar button').forEach(b=>b.classList.toggle('active', b.dataset.open===id));
