@@ -488,7 +488,7 @@ body{
           </div>
         </div>
         <div class="field-row">
-          <div class="field"><label>정렬 순서</label><input id="sk-order" type="number" value="0"></div>
+          <div class="field"><label>겹침 깊이 (숫자가 클수록 앞에 보여요 · 목록의 ▲▼ 버튼이나 끌어서 바꿔도 돼요)</label><input id="sk-order" type="number" value="0"></div>
         </div>
         <div class="form-actions">
           <button class="btn btn-primary" onclick="submitItem('sticker')">저장</button>
@@ -1011,7 +1011,8 @@ const SECTIONS = {
       renderSkWalkPreview();
     },
     idEl:'sk-id', statusEl:'sk-status', titleEl:'sk-form-title',
-    render: (it)=>{ const n = String(it.body||'').split(/\r?\n/).filter(x=>x.trim()).length; return renderRow(it, '스티커', `X ${it.x_pos}% · Y ${it.y_pos}% · ${it.width_px}px · ${it.rotation}°` + (n ? ` · 깜빡임 ${n}프레임` : '')); }
+    render: (it)=>{ const n = String(it.body||'').split(/\r?\n/).filter(x=>x.trim()).length; const row = renderRow(it, '스티커', `X ${it.x_pos}% · Y ${it.y_pos}% · ${it.width_px}px · ${it.rotation}° · 깊이 ${it.sort_order||0}` + (n ? ` · 깜빡임 ${n}프레임` : ''));
+      return row.replace('<div class="item-actions">', `<div class="item-actions"><button title="다른 스티커 앞으로" onclick="moveSticker(${it.id}, 1)">▲ 앞으로</button><button title="다른 스티커 뒤로" onclick="moveSticker(${it.id}, -1)">▼ 뒤로</button>`); }
   },
   page_bg:{
     fields:['category','image_url','sort_order'],
@@ -1254,6 +1255,17 @@ async function saveOrder(section, ids, items, listEl){
     if(hint) hint.textContent = '순서 저장 실패: ' + e.message;
     loadSection(section);
   }
+}
+// 스티커 겹침 순서: 목록 아래쪽일수록 앞에 보이므로, 앞으로(+1)는 한 칸 아래로, 뒤로(-1)는 한 칸 위로 옮김
+async function moveSticker(id, dir){
+  const items = CACHE.sticker || [];
+  const ids = items.map(x=>x.id);
+  const i = ids.indexOf(id), j = i + dir;
+  if(i < 0 || j < 0 || j >= ids.length) return;
+  [ids[i], ids[j]] = [ids[j], ids[i]];
+  const listEl = document.getElementById('list-sticker');
+  await saveOrder('sticker', ids, items, listEl);
+  loadSection('sticker');
 }
 async function loadSection(section){
   const listEl = document.getElementById('list-'+section);
