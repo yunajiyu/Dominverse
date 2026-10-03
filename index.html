@@ -228,26 +228,32 @@ body{
 .content-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
 .content-thumb .thumb-placeholder{ font-size:11px; color:var(--ink-soft); }
 
-.chip-menu{
-  flex:1; min-width:0;
-  display:grid; grid-template-columns:1fr 1fr;
-  gap:8px 14px; align-content:start;
+/* 메인 메뉴 카드: 가로로 긴 이미지 4개 + 제목, 호버 시 검은 오버레이 40% (미니 썸네일 오른쪽, 썸네일 높이에 맞춤) */
+.menu-cards{
+  flex:1; min-width:0; height:110px;
+  display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:10px;
 }
-.chip-item{
-  display:flex; align-items:center; gap:8px;
-  border:none; background:none; cursor:pointer;
-  padding:2px 0;
+.menu-card{
+  position:relative; display:flex; align-items:center; justify-content:space-between; gap:8px;
+  min-height:0; padding:0 14px; overflow:hidden;
+  border:1px solid var(--line); border-radius:10px; cursor:pointer;
+  background-size:cover; background-position:center; background-repeat:no-repeat;
+  color:var(--ink); font:inherit; text-align:left;
 }
-.chip-label{
-  font-size:12px; font-weight:700; color:var(--ink);
-  padding:4px 12px; border-radius:20px;
+.menu-card.menu-card.has-img{ color:#fff; }
+.menu-card.has-img .mc-title, .menu-card.has-img .mc-count{ text-shadow:0 1px 4px rgba(0,0,0,.55); }
+.menu-card::after{
+  content:''; position:absolute; inset:0; background:rgba(0,0,0,.4);
+  opacity:0; transition:opacity .2s ease; pointer-events:none;
 }
-.chip-item.active .chip-label{ box-shadow:inset 0 0 0 2px var(--ink); }
-.chip-count{ font-size:12px; font-weight:700; color:var(--ink-soft); }
-.tag-a{ background:var(--tag-a-bg); color:var(--tag-a-text, var(--ink)); }
-.tag-b{ background:var(--tag-b-bg); color:var(--tag-b-text, var(--ink)); }
-.tag-c{ background:var(--tag-c-bg); color:var(--tag-c-text, var(--ink)); }
-.tag-d{ background:var(--tag-d-bg); color:var(--tag-d-text, var(--ink)); }
+.menu-card:hover::after, .menu-card:focus-visible::after, .menu-card.active::after{ opacity:1; }
+.mc-title, .mc-count{ position:relative; z-index:1; }
+.mc-title{ font-size:14px; font-weight:700; letter-spacing:.02em; }
+.mc-count{ font-size:12px; font-weight:700; opacity:.9; }
+.tag-a{ background-color:var(--tag-a-bg); color:var(--tag-a-text, var(--ink)); }
+.tag-b{ background-color:var(--tag-b-bg); color:var(--tag-b-text, var(--ink)); }
+.tag-c{ background-color:var(--tag-c-bg); color:var(--tag-c-text, var(--ink)); }
+.tag-d{ background-color:var(--tag-d-bg); color:var(--tag-d-text, var(--ink)); }
 
 .main-image-frame{
   position:relative;
@@ -449,7 +455,7 @@ body{
   .index-tabs{ display:none; }
   .content-top{ flex-direction:column; }
   .content-thumb{ width:140px; height:140px; align-self:flex-start; }
-  .chip-menu{ grid-template-columns:repeat(2,1fr); }
+  .menu-cards{ flex:none; width:100%; }
 }
 
 /* ───────── 모바일 ───────── */
@@ -463,7 +469,7 @@ body{
   .book-rings{ display:none; }
   .profile-col{ display:none; }
   .center-col{ border-radius:14px; box-shadow:none; }
-  .chip-menu{ display:none; }
+  .menu-cards{ display:none; }
   .book-wrap::before{ display:none; }
   .book-cover{ border-radius:0; }
   .bgm-widget{ flex:0 0 auto; padding:6px 12px; }
@@ -544,20 +550,20 @@ body{
           <div class="menu-label" data-t="menu_label">menu</div>
           <div class="content-top">
             <div class="content-thumb" id="contentThumb"><span class="thumb-placeholder" data-t="thumb_placeholder">img</span></div>
-            <div class="chip-menu">
-              <button class="chip-item" data-open="profile">
-                <span class="chip-label tag-d" id="chipLabelProfile" data-t="nav_profile">프로필</span><span class="chip-count" id="statProfile">0</span>
-              </button>
-              <button class="chip-item" data-open="gallery" data-cat="커미션">
-                <span class="chip-label tag-c" id="chipLabelCommission" data-t="nav_commission">커미션</span><span class="chip-count" id="statCommission">0</span>
-              </button>
-              <button class="chip-item" data-open="novel">
-                <span class="chip-label tag-a" id="chipLabelNovel" data-t="nav_novel">소설</span><span class="chip-count" id="statNovel">0</span>
-              </button>
-              <button class="chip-item" data-open="gallery" data-cat="그림">
-                <span class="chip-label tag-b" id="chipLabelDoodle" data-t="nav_doodle">낙서</span><span class="chip-count" id="statDoodle">0</span>
-              </button>
-            </div>
+          <div class="menu-cards">
+            <button class="menu-card tag-d" data-open="profile" data-card="profile">
+              <span class="mc-title" id="chipLabelProfile" data-t="nav_profile">프로필</span><span class="mc-count" id="statProfile">0</span>
+            </button>
+            <button class="menu-card tag-c" data-open="gallery" data-cat="커미션" data-card="commission">
+              <span class="mc-title" id="chipLabelCommission" data-t="nav_commission">커미션</span><span class="mc-count" id="statCommission">0</span>
+            </button>
+            <button class="menu-card tag-a" data-open="novel" data-card="novel">
+              <span class="mc-title" id="chipLabelNovel" data-t="nav_novel">소설</span><span class="mc-count" id="statNovel">0</span>
+            </button>
+            <button class="menu-card tag-b" data-open="gallery" data-cat="그림" data-card="doodle">
+              <span class="mc-title" id="chipLabelDoodle" data-t="nav_doodle">낙서</span><span class="mc-count" id="statDoodle">0</span>
+            </button>
+          </div>
           </div>
           <div class="main-image-frame" id="mainImageFrame">
             <div class="placeholder" id="mainImagePlaceholder" data-t="main_placeholder"></div>
@@ -683,7 +689,7 @@ function t(key, def){ return TEXTS[key] || def; }
 // ══════════════════════════════════════
 function openTab(id){
   document.querySelectorAll('.content-section').forEach(sec=>sec.classList.toggle('active', sec.dataset.content===id));
-  document.querySelectorAll('.chip-item').forEach(b=>b.classList.toggle('active', b.dataset.open===id));
+  document.querySelectorAll('.menu-card').forEach(b=>b.classList.toggle('active', b.dataset.open===id));
   document.querySelectorAll('.mobile-tabbar button').forEach(b=>b.classList.toggle('active', b.dataset.open===id));
 }
 document.querySelectorAll('[data-open]').forEach(el=>{
@@ -953,6 +959,18 @@ async function loadMenuThumb(){
     if(!items.length || !items[0].image_url) return;
     menuThumbSet = true;
     document.getElementById('contentThumb').innerHTML = `<img src="${escapeHtml(items[0].image_url)}" alt="">`;
+  }catch(e){ /* 무시 */ }
+}
+
+// 메뉴 카드 이미지 (관리자 > 메인 화면 이미지 > ② 메뉴 카드 이미지): 카드별 가로로 긴 이미지, 없으면 색상 배경
+async function loadMenuCards(){
+  try{
+    const items = await dbSelect('menu_card');
+    items.forEach(it=>{
+      if(!it.category || !it.image_url) return;
+      const card = document.querySelector(`.menu-card[data-card="${it.category}"]`);
+      if(card){ card.style.backgroundImage = `url('${String(it.image_url).replace(/'/g,"\\'")}')`; card.classList.add('has-img'); }
+    });
   }catch(e){ /* 무시 */ }
 }
 
@@ -1369,7 +1387,7 @@ async function loadLoadingLogo(){
 try{ if(localStorage.getItem('dv_admin_authed') === 'yes'){ const w = document.getElementById('writeBtn'); if(w) w.hidden = false; } }catch(e){}
 const BOOT_TASKS = [
   loadLoadingLogo(), loadMainProfile(),
-  loadPageBackground(), loadMainImage(), loadStickerBg(), loadMenuThumb(),
+  loadPageBackground(), loadMainImage(), loadStickerBg(), loadMenuThumb(), loadMenuCards(),
   loadStickers(), loadContentTop(), loadProfiles(), loadNovel(), loadGallery(),
   loadBGM(), loadAnniversary(), loadTheme(), loadFont(), TEXT_READY
 ];
