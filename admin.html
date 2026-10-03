@@ -249,30 +249,38 @@ body{
       </div>
       <div class="list" id="list-sticker_bg"></div>
 
-      <div class="sub-title">② 메뉴 썸네일 (메뉴 왼쪽 작은 이미지)</div>
-      <div class="card" data-section="menu_thumb">
-        <h3 id="mt-form-title">썸네일 설정</h3>
-        <input type="hidden" id="mt-id">
+      <div class="sub-title">② 메뉴 카드 이미지 (메인 메뉴 4칸 — 가로로 긴 이미지 위에 제목이 얹혀요)</div>
+      <div class="card" data-section="menu_card">
+        <h3 id="mc-form-title">메뉴 카드 이미지 설정</h3>
+        <input type="hidden" id="mc-id">
         <div class="field-row">
-          <div class="field full">
-            <label>이미지 URL (또는 아래에서 파일 선택) — 등록하지 않으면 그림갤러리의 첫 이미지가 자동으로 쓰입니다</label>
-            <input id="mt-image" placeholder="https://...">
-            <div class="upload-row">
-              <input type="file" id="mt-file" accept="image/*">
-              <span class="upload-status" id="mt-file-status"></span>
-            </div>
+          <div class="field">
+            <label>어느 카드?</label>
+            <select id="mc-category">
+              <option value="profile">프로필</option>
+              <option value="commission">커미션</option>
+              <option value="novel">소설</option>
+              <option value="doodle">낙서</option>
+            </select>
           </div>
         </div>
         <div class="field-row">
-          <div class="field"><label>정렬 순서</label><input id="mt-order" type="number" value="0"></div>
+          <div class="field full">
+            <label>이미지 URL (또는 아래에서 파일 선택) — 가로로 긴 이미지(권장 약 1020×300px, 3.4:1)를 올려주세요. 같은 카드에 다시 저장하면 이미지가 교체돼요. 등록하지 않으면 색상 배경이 보여요</label>
+            <input id="mc-image" placeholder="https://...">
+            <div class="upload-row">
+              <input type="file" id="mc-file" accept="image/*">
+              <span class="upload-status" id="mc-file-status"></span>
+            </div>
+          </div>
         </div>
         <div class="form-actions">
-          <button class="btn btn-primary" onclick="submitItem('menu_thumb')">저장</button>
-          <button class="btn btn-ghost" onclick="resetForm('menu_thumb')">취소</button>
+          <button class="btn btn-primary" onclick="submitItem('menu_card')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('menu_card')">취소</button>
         </div>
-        <div class="status" id="mt-status"></div>
+        <div class="status" id="mc-status"></div>
       </div>
-      <div class="list" id="list-menu_thumb"></div>
+      <div class="list" id="list-menu_card"></div>
 
       <div class="sub-title">③ 로딩 화면 (접속 직후 보이는 로고/문구)</div>
       <div class="card" data-section="loading_logo">
@@ -869,7 +877,7 @@ wireFileUpload('gl-file', 'gl-image', 'gl-file-status', 'gallery');
 wireFileUpload('pg-file', 'pg-value', 'pg-file-status', 'bg');
 wireFileUpload('sb-file', 'sb-value', 'sb-file-status', 'stickerbg');
 wireFileUpload('sf-file', 'sf-url', 'sf-file-status', 'font');
-wireFileUpload('mt-file', 'mt-image', 'mt-file-status', 'thumb');
+wireFileUpload('mc-file', 'mc-image', 'mc-file-status', 'menucard');
 (function(){
   const f = document.getElementById('gl-multi-file'); if(!f) return;
   f.addEventListener('change', async ()=>{
@@ -1105,12 +1113,12 @@ const SECTIONS = {
         </div>`;
     }
   },
-  menu_thumb:{
-    fields:['image_url','sort_order'],
-    read: ()=>({ image_url: val('mt-image'), sort_order: numval('mt-order') }),
-    fill: (it)=>{ setval('mt-image',it.image_url); setval('mt-order',it.sort_order); },
-    idEl:'mt-id', statusEl:'mt-status', titleEl:'mt-form-title',
-    render: (it)=> renderRow(it, '메뉴 썸네일', '')
+  menu_card:{
+    fields:['category','image_url'],
+    read: ()=>({ category: val('mc-category'), image_url: val('mc-image') }),
+    fill: (it)=>{ setval('mc-category',it.category); setval('mc-image',it.image_url); },
+    idEl:'mc-id', statusEl:'mc-status', titleEl:'mc-form-title',
+    render: (it)=> renderRow(it, '메뉴 카드 — ' + ({profile:'프로필',commission:'커미션',novel:'소설',doodle:'낙서'}[it.category] || it.category), '')
   },
   bgm_cover:{
     fields:['image_url','sort_order'],
@@ -1298,6 +1306,10 @@ async function submitItem(section){
   const idEl = document.getElementById(cfg.idEl);
   const statusEl = document.getElementById(cfg.statusEl);
   const row = { section, ...cfg.read() };
+  if(section==='menu_card' && !idEl.value){   // 같은 카드는 새로 만들지 않고 기존 항목을 교체
+    const ex = (CACHE.menu_card||[]).find(x=>x.category===row.category);
+    if(ex) idEl.value = ex.id;
+  }
   if(DRAG_SECTIONS.includes(section) && !idEl.value){      // 새 항목은 목록 맨 아래로
     const cur = CACHE[section] || [];
     row.sort_order = cur.length ? Math.max(...cur.map(x=>+x.sort_order||0)) + 1 : 0;
@@ -1529,7 +1541,6 @@ const TEXT_KEYS = [
   {g:'메뉴 이름 (오른쪽 탭 · 칩 · 모바일 탭바 · 갤러리 탭)', k:'gal_tab_art', l:'갤러리 탭: 그림', d:'그림'},
   {g:'메인 화면 문구', k:'menu_label', l:'메뉴 위 작은 글씨', d:'menu'},
   {g:'메인 화면 문구', k:'today_label', l:'하단 날짜 앞 글자', d:'Today'},
-  {g:'메인 화면 문구', k:'thumb_placeholder', l:'메뉴 썸네일 빈 칸 글자', d:'img'},
   {g:'메인 화면 문구', k:'main_placeholder', l:'메인 영역 빈 칸 안내 문구 (기본: 비어 있음 · 스티커 영역 배경이 있으면 자동으로 숨김)', d:''},
   {g:'오른쪽 패널 · 기타', k:'side_write', l:'글쓰기 버튼', d:'✏ 글쓰기'},
   {g:'오른쪽 패널 · 기타', k:'side_write_url', l:'글쓰기 버튼 이동 주소(관리자 페이지 주소)', d:'dominverse-admin.html'},
