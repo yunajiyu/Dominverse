@@ -467,11 +467,8 @@ body{
         </div>
         <div class="field-row">
           <div class="field">
-            <label>어느 영역? (AU와 영역을 고르면 저장된 내용이 불러와져요)</label>
-            <select id="pc-slot">
-              <option value="summary">1번 영역 (기본 라벨: 요약)</option>
-              <option value="intro">2번 영역 (기본 라벨: 소개)</option>
-            </select>
+            <label>몇 번째 영역? — 1번(기본 라벨 요약), 2번(소개), 3번 이상은 자유롭게 추가해요. 번호 순서대로 보이고, AU와 번호를 적으면 저장된 내용이 불러와져요</label>
+            <input id="pc-slot" type="number" min="1" step="1" value="1" placeholder="1">
           </div>
           <div class="field"><label>라벨 (영역 제목)</label><input id="pc-label" placeholder="요약"></div>
         </div>
@@ -1136,11 +1133,11 @@ const SECTIONS = {
   },
   profile_common:{
     fields:['category','au_label','title','body','sort_order'],
-    // 프로필 탭 아래 설명: category = summary|intro, au_label = AU 라벨(비우면 공통), title = 라벨, body = 내용
-    read: ()=>({ category: val('pc-slot'), au_label: val('pc-au'), title: val('pc-label'), body: val('pc-body'), sort_order: val('pc-slot')==='summary' ? 0 : 1 }),
-    fill: (it)=>{ setval('pc-slot',it.category); setval('pc-au',it.au_label); setval('pc-label',it.title); setval('pc-body',it.body); },
+    // 프로필 탭 아래 설명: category = summary(1번)|intro(2번)|slot3, slot4…, au_label = AU 라벨(비우면 공통), title = 라벨, body = 내용
+    read: ()=>({ category: pcSlotKey(pcSlotNum()), au_label: val('pc-au'), title: val('pc-label'), body: val('pc-body'), sort_order: pcSlotNum() }),
+    fill: (it)=>{ setval('pc-slot',pcNumOf(it.category)); setval('pc-au',it.au_label); setval('pc-label',it.title); setval('pc-body',it.body); },
     idEl:'pc-id', statusEl:'pc-status', titleEl:'pc-form-title',
-    render: (it)=> renderRow(it, (it.title || ({summary:'요약', intro:'소개'}[it.category]) || '(라벨 없음)') + '  ['+(it.au_label ? 'AU: '+it.au_label : '공통')+' · '+({summary:'1번 영역', intro:'2번 영역'}[it.category]||it.category)+']', (it.body||'').slice(0,50))
+    render: (it)=> renderRow(it, (it.title || ({summary:'요약', intro:'소개'}[it.category]) || '(라벨 없음)') + '  ['+(it.au_label ? 'AU: '+it.au_label : '공통')+' · '+pcNumOf(it.category)+'번 영역'+']', (it.body||'').slice(0,50))
   },
   novel:{
     fields:['category','episode_no','title','summary','body'],
@@ -1583,6 +1580,7 @@ function resetForm(section){
     renderSkWalkPreview();
     updateSkMarkerFromFields(); updateSkMarkerImage();
   }
+  if(section==='profile_common'){ setval('pc-slot',1); setval('pc-au',''); }
   if(section==='site_font'){
     document.getElementById('sf-category').value = 'preset';
     updateFontFields();
@@ -1731,13 +1729,18 @@ function updateNgPreview(){
 }
 ['ng-value','ng-color','ng-category'].forEach(id=>document.getElementById(id).addEventListener('input', updateNgPreview));
 updateNgPreview();
+// 설명 영역 번호 ↔ category: 1 = summary, 2 = intro, 3번부터 = slot3, slot4 … (기존 저장분과 호환)
+function pcSlotNum(){ const n = parseInt(document.getElementById('pc-slot').value, 10); return n >= 1 ? n : 1; }
+function pcSlotKey(n){ return n === 1 ? 'summary' : n === 2 ? 'intro' : 'slot' + n; }
+function pcNumOf(cat){ return cat === 'summary' ? 1 : cat === 'intro' ? 2 : (parseInt(String(cat||'').replace('slot',''), 10) || 1); }
 function pcPrefill(){
-  const slot = document.getElementById('pc-slot').value, au = document.getElementById('pc-au').value.trim();
+  const slot = pcSlotKey(pcSlotNum()), au = document.getElementById('pc-au').value.trim();
   const ex = (CACHE.profile_common||[]).find(x=>x.category===slot && (x.au_label||'').trim()===au);
   if(ex){ setval('pc-label',ex.title); setval('pc-body',ex.body); document.getElementById('pc-id').value = ex.id; }
   else { setval('pc-label',''); setval('pc-body',''); document.getElementById('pc-id').value = ''; }
 }
 document.getElementById('pc-slot').addEventListener('change', pcPrefill);
+document.getElementById('pc-slot').addEventListener('input', pcPrefill);
 document.getElementById('pc-au').addEventListener('change', pcPrefill);
 // 종류가 '단색'일 때만 색상 선택기를 보이고, '사진'일 때만 블러 슬라이더/파일 업로드를 보임
 // 정렬 순서 숫자 입력칸은 숨기고, 목록을 끌어서 순서를 정합니다
