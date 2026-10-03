@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dominverse 관리자</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+@font-face{
+  font-family:'Pretendard';
+  src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Regular.woff2') format('woff2');
+  font-weight:400; font-display:swap;
+}
+@font-face{
+  font-family:'Pretendard';
+  src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Bold.woff2') format('woff2');
+  font-weight:700; font-display:swap;
+}
+:root{
+  --paper:#ffffff;
+  --paper-dim:#f2f2f5;
+  --win-bar:#f6f6f8;
+  --ink:#2b2b31;
+  --ink-soft:#87868f;
+  --accent:#7B1CFF;
+  --accent-dim:#f2e9ff;
+  --line:#e4e3e8;
+  --danger:#e5484d;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:'Pretendard',sans-serif;
+  background:var(--paper-dim);
+  color:var(--ink);
+  min-height:100vh;
+}
+
+/* ───────── 레이아웃 ───────── */
+#app{ display:none; }
+#app.ready{ display:flex; min-height:100vh; }
+.sidebar{
+  width:200px; flex-shrink:0; background:var(--ink); color:#fff;
+  padding:22px 14px; display:flex; flex-direction:column; gap:4px;
+}
+.sidebar .brand{ font-size:14px; font-weight:700; margin-bottom:18px; padding:0 8px; }
+.sidebar .brand span{ color:var(--accent); }
+.nav-btn{
+  text-align:left; background:none; border:none; color:#c8c6d0;
+  padding:10px 10px; border-radius:8px; font-size:13px; cursor:pointer;
+}
+.nav-btn:hover{ background:rgba(255,255,255,.06); }
+.nav-btn.active{ background:var(--accent); color:#fff; }
+
+.main{ flex:1; padding:28px 32px; max-width:920px; }
+.panel{ display:none; }
+.panel.active{ display:block; }
+.panel h2{ font-size:18px; margin-bottom:4px; }
+.panel > p.desc{ font-size:12.5px; color:var(--ink-soft); margin-bottom:20px; }
+
+.card{
+  background:var(--paper); border:1px solid var(--line); border-radius:12px;
+  padding:20px; margin-bottom:22px;
+}
+.card h3{ font-size:13px; margin-bottom:14px; }
+.field-row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+.field{ display:flex; flex-direction:column; gap:5px; }
+.field.full{ grid-column:1 / -1; }
+.field[hidden], .field-row[hidden]{ display:none; }
+.drag-hint{ font-size:12px; color:var(--ink-soft); margin:2px 0 6px; }
+.item-row[draggable="true"]{ cursor:grab; }
+.item-row .drag-handle{ color:var(--ink-soft); font-size:16px; line-height:1; letter-spacing:-2px; user-select:none; flex-shrink:0; cursor:grab; }
+.item-row.dragging{ opacity:.4; }
+.item-row.drop-before{ box-shadow:0 -3px 0 0 var(--accent); }
+.item-row.drop-after{ box-shadow:0 3px 0 0 var(--accent); }
+.field input[type=range]{ padding:0; border:none; accent-color:var(--accent); }
+.field label b{ color:var(--ink); }
+.color-row{ display:flex; align-items:center; gap:8px; margin-top:6px; }
+.color-row[hidden]{ display:none; }
+.color-row input[type=color]{ width:46px; height:32px; padding:2px; border:1px solid var(--line); border-radius:6px; background:var(--paper); cursor:pointer; }
+.color-row span{ font-size:11px; color:var(--ink-soft); }
+.sub-title{ font-size:12px; font-weight:700; color:var(--accent); margin:26px 0 8px; }
+.text-group{ grid-column:1 / -1; font-size:12px; font-weight:700; color:var(--accent); margin-top:14px; padding-bottom:4px; border-bottom:1px dashed var(--line); }
+.field label small{ color:#b0afb8; margin-left:4px; }
+.field label{ font-size:11.5px; color:var(--ink-soft); }
+.field input, .field select, .field textarea{
+  border:1px solid var(--line); border-radius:8px; padding:9px 11px;
+  font-size:13px; font-family:inherit; color:var(--ink); background:var(--paper);
+}
+.field textarea{ resize:vertical; min-height:70px; }
+.pos-preview{
+  position:relative; width:100%; aspect-ratio:16/9;
+  background:
+    linear-gradient(var(--line) 1px, transparent 1px) 0 0 / 10% 10%,
+    linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0 / 10% 10%,
+    var(--paper-dim);
+  border:1px dashed var(--line); border-radius:8px;
+  cursor:crosshair; overflow:hidden;
+}
+.pos-preview::before{
+  content:''; position:absolute; inset:0;
+  background-image:var(--sb-bg, none);
+  background-size:cover; background-position:center; background-repeat:no-repeat;
+}
+.pos-marker{
+  position:absolute; left:50%; top:50%;
+  width:22px; height:22px; border-radius:50%;
+  background:var(--accent); background-size:cover; background-position:center;
+  border:2px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,.35);
+  transform:translate(-50%,-50%);
+  cursor:grab;
+}
+.pos-marker:active{ cursor:grabbing; }
+.form-actions{ display:flex; gap:8px; margin-top:6px; }
+.btn{
+  border:none; border-radius:8px; padding:9px 18px; font-size:12.5px; font-weight:700; cursor:pointer;
+}
+.btn-primary{ background:var(--accent); color:#fff; }
+.btn-ghost{ background:var(--paper-dim); color:var(--ink); }
+.btn-ghost:hover{ background:var(--line); }
+
+.list{ display:flex; flex-direction:column; gap:8px; }
+.item-row{
+  display:flex; align-items:center; gap:12px;
+  background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:10px 14px;
+}
+.item-row img{ width:40px; height:40px; border-radius:6px; object-fit:cover; background:var(--paper-dim); flex-shrink:0; }
+.item-row .noimg{ width:40px; height:40px; border-radius:6px; background:var(--paper-dim); flex-shrink:0; }
+.item-meta{ flex:1; min-width:0; }
+.item-meta b{ font-size:12.5px; display:block; }
+.item-meta span{ font-size:11px; color:var(--ink-soft); }
+.item-tag{
+  font-size:10.5px; background:var(--accent-dim); color:var(--accent);
+  padding:2px 8px; border-radius:20px; flex-shrink:0;
+}
+.item-actions{ display:flex; gap:6px; flex-shrink:0; }
+.item-actions button{
+  border:none; background:none; font-size:11.5px; color:var(--ink-soft); cursor:pointer; padding:4px 6px;
+}
+.item-actions button:hover{ color:var(--ink); }
+.item-actions button.del:hover{ color:var(--danger); }
+.empty{ font-size:12px; color:var(--ink-soft); padding:14px 4px; }
+.status{ font-size:11.5px; color:var(--ink-soft); margin-top:8px; min-height:14px; }
+
+@media (max-width:720px){
+  #app.ready{ flex-direction:column; }
+  .sidebar{ width:100%; flex-direction:row; overflow-x:auto; padding:12px; }
+  .main{ padding:18px 16px; }
+  .field-row{ grid-template-columns:1fr; }
+}
+
+/* ───────── 비밀번호 게이트 ───────── */
+#pw-gate{
+  position:fixed; inset:0; z-index:100;
+  background:var(--ink); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+}
+.pw-box{
+  width:280px; display:flex; flex-direction:column; gap:10px; text-align:center;
+}
+.pw-box h2{ font-size:15px; margin-bottom:4px; }
+.pw-box input{
+  border:1.5px solid #4a4a55; border-radius:8px; padding:10px 12px;
+  font-size:14px; background:#26262e; color:#fff; text-align:center;
+}
+.pw-box input:focus{ outline:none; border-color:var(--accent); }
+.pw-box button{
+  border:none; border-radius:8px; padding:10px; font-size:13px; font-weight:700;
+  background:var(--accent); color:#fff; cursor:pointer;
+}
+.pw-box .pw-err{ font-size:11.5px; color:var(--danger); min-height:14px; }
+
+/* ───────── 폰트 미리보기 ───────── */
+.font-preview{
+  border:1px dashed var(--line); border-radius:8px; padding:14px 16px; margin-bottom:10px;
+  font-size:20px; line-height:1.6; background:var(--paper-dim);
+}
+.font-preview small{ display:block; font-size:11px; color:var(--ink-soft); font-family:'Pretendard',sans-serif; }
+
+/* ───────── 파일 업로드 필드 ───────── */
+.upload-row{ display:flex; align-items:center; gap:8px; margin-top:4px; }
+.upload-row input[type=file]{ flex:1; font-size:11.5px; }
+.upload-status{ font-size:11px; color:var(--ink-soft); }
+</style>
+</head>
+<body>
+
+<div id="pw-gate">
+  <div class="pw-box">
+    <h2>🔒 관리자 비밀번호</h2>
+    <input type="password" id="pw-input" placeholder="비밀번호" autocomplete="current-password">
+    <div class="pw-err" id="pw-err"></div>
+    <button id="pw-submit">확인</button>
+  </div>
+</div>
+
+<div id="app">
+  <div class="sidebar">
+    <div class="brand">Dominv<span>e</span>rse</div>
+    <button class="nav-btn active" data-panel="main_image">메인 화면 이미지</button>
+    <button class="nav-btn" data-panel="profile">프로필</button>
+    <button class="nav-btn" data-panel="novel">소설</button>
+    <button class="nav-btn" data-panel="gallery">그림갤러리</button>
+    <button class="nav-btn" data-panel="sticker">스티커</button>
+    <button class="nav-btn" data-panel="page_bg">바깥 배경</button>
+    <button class="nav-btn" data-panel="site_bgm">BGM</button>
+    <button class="nav-btn" data-panel="anniversary">기념일</button>
+    <button class="nav-btn" data-panel="site_theme">테마 설정</button>
+    <button class="nav-btn" data-panel="site_font">폰트</button>
+    <button class="nav-btn" data-panel="site_text">텍스트 (라벨)</button>
+  </div>
+
+  <div class="main">
+
+    <!-- 메인 이미지 -->
+    <div class="panel active" data-panel="main_image">
+      <h2>메인 화면 이미지</h2>
+      <p class="desc">메인화면에 보이는 이미지 4가지를 이곳에서 한 번에 관리합니다. ① 스티커 영역 배경: 가운데 큰 영역(스티커가 붙는 곳)의 배경, ② 메뉴 썸네일: 메뉴 왼쪽의 작은 정사각 이미지(중앙 기준으로 정사각형으로 잘려 보입니다), ③ 로딩 화면: 접속 직후 잠깐 보이는 로고/문구, ④ 메인 프로필 사진: 왼쪽 프로필 카드의 원형 사진. 각 항목은 하나만 등록하세요.</p>
+
+      <div class="sub-title">① 스티커 영역 배경</div>
+      <div class="card" data-section="sticker_bg">
+        <h3 id="sb-form-title">배경 설정</h3>
+        <input type="hidden" id="sb-id">
+        <div class="field-row">
+          <div class="field">
+            <label>종류</label>
+            <select id="sb-category">
+              <option value="image">사진</option>
+              <option value="color">단색</option>
+            </select>
+          </div>
+          <div class="field"><label>정렬 순서</label><input id="sb-order" type="number" value="0"></div>
+        </div>
+        <div class="field-row">
+          <div class="field full">
+            <label>이미지 URL 또는 색상 코드 (예: https://... 또는 #f1e8ff)</label>
+            <input id="sb-value" placeholder="https://... 또는 #f1e8ff">
+            <div class="color-row" id="sb-color-row" hidden><input type="color" id="sb-color" value="#f1e8ff"><span>단색일 때 색상을 직접 고를 수 있어요</span></div>
+            <div class="upload-row" id="sb-upload-row">
+              <input type="file" id="sb-file" accept="image/*">
+              <span class="upload-status" id="sb-file-status"></span>
+            </div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('sticker_bg')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('sticker_bg')">취소</button>
+        </div>
+        <div class="status" id="sb-status"></div>
+      </div>
+      <div class="list" id="list-sticker_bg"></div>
+
+      <div class="sub-title">② 메뉴 썸네일 (메뉴 왼쪽 작은 이미지)</div>
+      <div class="card" data-section="menu_thumb">
+        <h3 id="mt-form-title">썸네일 설정</h3>
+        <input type="hidden" id="mt-id">
+        <div class="field-row">
+          <div class="field full">
+            <label>이미지 URL (또는 아래에서 파일 선택) — 등록하지 않으면 그림갤러리의 첫 이미지가 자동으로 쓰입니다</label>
+            <input id="mt-image" placeholder="https://...">
+            <div class="upload-row">
+              <input type="file" id="mt-file" accept="image/*">
+              <span class="upload-status" id="mt-file-status"></span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>정렬 순서</label><input id="mt-order" type="number" value="0"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('menu_thumb')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('menu_thumb')">취소</button>
+        </div>
+        <div class="status" id="mt-status"></div>
+      </div>
+      <div class="list" id="list-menu_thumb"></div>
+
+      <div class="sub-title">③ 로딩 화면 (접속 직후 보이는 로고/문구)</div>
+      <div class="card" data-section="loading_logo">
+        <h3 id="ld-form-title">로딩 화면 설정</h3>
+        <input type="hidden" id="ld-id">
+        <div class="field-row">
+          <div class="field full">
+            <label>로고 이미지 URL (또는 파일 선택) — 없으면 문구만, 둘 다 없으면 기본 스피너</label>
+            <input id="ld-image" placeholder="https://...">
+            <div class="upload-row">
+              <input type="file" id="ld-file" accept="image/*">
+              <span class="upload-status" id="ld-file-status"></span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field full"><label>로딩 문구 (예: DOHYUNYUMIN 불러오는 중…)</label><input id="ld-title" placeholder="예: 잠시만요…"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>정렬 순서</label><input id="ld-order" type="number" value="0"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('loading_logo')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('loading_logo')">취소</button>
+        </div>
+        <div class="status" id="ld-status"></div>
+        <p class="desc" style="margin-top:8px">※ 로딩 화면은 페이지를 불러오기 전에 나와야 해서, 저장한 뒤 사이트를 한 번 방문(새로고침)해야 그다음 접속부터 적용됩니다.</p>
+      </div>
+      <div class="list" id="list-loading_logo"></div>
+
+      <div class="sub-title">④ 메인 프로필 사진 (왼쪽 프로필 카드의 동그란 사진)</div>
+      <div class="card" data-section="main_profile">
+        <h3 id="mp-form-title">메인 프로필 사진 설정</h3>
+        <input type="hidden" id="mp-id">
+        <div class="field-row">
+          <div class="field full">
+            <label>이미지 URL (또는 아래에서 파일 선택) — 원형으로 잘려 표시됩니다 (정사각 이미지 권장)</label>
+            <input id="mp-image" placeholder="https://...">
+            <div class="upload-row">
+              <input type="file" id="mp-file" accept="image/*">
+              <span class="upload-status" id="mp-file-status"></span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>정렬 순서</label><input id="mp-order" type="number" value="0"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('main_profile')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('main_profile')">취소</button>
+        </div>
+        <div class="status" id="mp-status"></div>
+      </div>
+      <div class="list" id="list-main_profile"></div>
+    </div>
+
+    <!-- 프로필 -->
+    <div class="panel" data-panel="profile">
+      <h2>프로필</h2>
+      <p class="desc">캐릭터별 프로필 / AU 버전을 관리합니다.</p>
+      <div class="card" data-section="profile">
+        <h3 id="pf-form-title">새 프로필 추가</h3>
+        <input type="hidden" id="pf-id">
+        <div class="field-row">
+          <div class="field">
+            <label>캐릭터</label>
+            <select id="pf-character">
+              <option value="박도현">박도현</option>
+              <option value="유민">유민</option>
+            </select>
+          </div>
+          <div class="field"><label>AU 라벨</label><input id="pf-au" placeholder="예: 기본 / AU1"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>정렬 순서</label><input id="pf-order" type="number" value="0"></div>
+          <div class="field">
+            <label>이미지 URL (또는 파일 선택)</label>
+            <input id="pf-image" placeholder="https://...">
+            <div class="upload-row">
+              <input type="file" id="pf-file" accept="image/*">
+              <span class="upload-status" id="pf-file-status"></span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field full"><label>한 줄 소개</label><input id="pf-summary" placeholder="짧은 한 줄 소개"></div>
+        </div>
+        <div class="field-row">
+          <div class="field full"><label>상세 (나이/키/특징 등 자유 서식)</label><textarea id="pf-body" placeholder="나이 · &#10;키 · &#10;특징 · "></textarea></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('profile')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('profile')">취소</button>
+        </div>
+        <div class="status" id="pf-status"></div>
+      </div>
+      <div class="list" id="list-profile"></div>
+    </div>
+
+    <!-- 소설 -->
+    <div class="panel" data-panel="novel">
+      <h2>소설</h2>
+      <p class="desc">회차별 게시물을 관리합니다.</p>
+      <div class="card" data-section="novel">
+        <h3 id="nv-form-title">새 회차 추가</h3>
+        <input type="hidden" id="nv-id">
+        <div class="field-row">
+          <div class="field"><label>회차 번호</label><input id="nv-episode" type="number" placeholder="1"></div>
+          <div class="field"><label>제목</label><input id="nv-title" placeholder="회차 제목"></div>
+        </div>
+        <div class="field-row">
+          <div class="field full"><label>본문</label><textarea id="nv-body" style="min-height:160px" placeholder="회차 본문"></textarea></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('novel')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('novel')">취소</button>
+        </div>
+        <div class="status" id="nv-status"></div>
+      </div>
+      <div class="list" id="list-novel"></div>
+    </div>
+
+    <!-- 그림갤러리 -->
+    <div class="panel" data-panel="gallery">
+      <h2>그림갤러리</h2>
+      <p class="desc">그림 / 커미션 탭에 노출되는 이미지를 관리합니다.</p>
+      <div class="card" data-section="gallery">
+        <h3 id="gl-form-title">새 이미지 추가</h3>
+        <input type="hidden" id="gl-id">
+        <div class="field-row">
+          <div class="field">
+            <label>분류</label>
+            <select id="gl-category">
+              <option value="그림">그림</option>
+              <option value="커미션">커미션</option>
+            </select>
+          </div>
+          <div class="field"><label>정렬 순서</label><input id="gl-order" type="number" value="0"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>제목 (선택)</label><input id="gl-title" placeholder="예: 카페 컷"></div>
+          <div class="field">
+            <label>이미지 URL (또는 파일 선택)</label>
+            <input id="gl-image" placeholder="https://...">
+            <div class="upload-row">
+              <input type="file" id="gl-file" accept="image/*">
+              <span class="upload-status" id="gl-file-status"></span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field full">
+            <label>묶음 이미지 — 추가 이미지 (선택 · 한 줄에 URL 하나). 위 이미지가 갤러리 목록에 보이는 대표이고, 클릭하면 팝업에서 좌우로 넘겨 볼 수 있어요</label>
+            <textarea id="gl-extra" rows="4" placeholder="https://... (한 줄에 하나)"></textarea>
+            <div class="upload-row">
+              <input type="file" id="gl-multi-file" accept="image/*" multiple>
+              <span class="upload-status" id="gl-multi-status">여러 장을 한 번에 선택하면 위 칸에 자동으로 추가됩니다</span>
+            </div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('gallery')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('gallery')">취소</button>
+        </div>
+        <div class="status" id="gl-status"></div>
+      </div>
+      <div class="list" id="list-gallery"></div>
+    </div>
+
+    <!-- 배경화면 -->
+    <!-- 스티커 -->
+    <div class="panel" data-panel="sticker">
+      <h2>스티커</h2>
+      <p class="desc">메인 이미지 위에 붙는 투명 PNG 스티커입니다. 위치는 메인 이미지 기준 % 좌표로 지정하며, 다른 탭으로 이동하면 보이지 않습니다.</p>
+      <div class="card" data-section="sticker">
+        <h3 id="sk-form-title">새 스티커 추가</h3>
+        <input type="hidden" id="sk-id">
+        <div class="field-row">
+          <div class="field full">
+            <label>이미지 URL (투명 PNG, 또는 파일 선택)</label>
+            <input id="sk-image" placeholder="https://...">
+            <div class="upload-row">
+              <input type="file" id="sk-file" accept="image/*">
+              <span class="upload-status" id="sk-file-status"></span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field full">
+            <label>위치 미리보기 (클릭하거나 점을 드래그하세요)</label>
+            <div class="pos-preview" id="skPreview">
+              <div class="pos-marker" id="skMarker"></div>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>가로 위치 X (%, 0~100)</label><input id="sk-x" type="number" value="50"></div>
+          <div class="field"><label>세로 위치 Y (%, 0~100)</label><input id="sk-y" type="number" value="50"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>너비 (px)</label><input id="sk-width" type="number" value="100"></div>
+          <div class="field"><label>회전 (deg)</label><input id="sk-rotation" type="number" value="0"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>정렬 순서</label><input id="sk-order" type="number" value="0"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('sticker')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('sticker')">취소</button>
+        </div>
+        <div class="status" id="sk-status"></div>
+      </div>
+      <div class="list" id="list-sticker"></div>
+    </div>
+
+    <!-- 바깥 배경 -->
+    <div class="panel" data-panel="page_bg">
+      <h2>바깥 배경</h2>
+      <p class="desc">카드 바깥 페이지 전체 배경입니다. 사진 또는 단색 중 하나를 고르세요. 사진은 흐림(블러) 정도와 불투명도를 직접 조절할 수 있습니다. 하나만 등록하세요.</p>
+      <div class="card" data-section="page_bg">
+        <h3 id="pg-form-title">배경 설정</h3>
+        <input type="hidden" id="pg-id">
+        <div class="field-row">
+          <div class="field">
+            <label>종류</label>
+            <select id="pg-category">
+              <option value="image">사진</option>
+              <option value="color">단색</option>
+            </select>
+          </div>
+          <div class="field"><label>정렬 순서</label><input id="pg-order" type="number" value="0"></div>
+        </div>
+        <div class="field-row">
+          <div class="field full">
+            <label>이미지 URL 또는 색상 코드 (예: https://... 또는 #1a1330)</label>
+            <input id="pg-value" placeholder="https://... 또는 #1a1330">
+            <div class="color-row" id="pg-color-row" hidden><input type="color" id="pg-color" value="#1a1330"><span>단색일 때 색상을 직접 고를 수 있어요</span></div>
+            <div class="upload-row" id="pg-upload-row">
+              <input type="file" id="pg-file" accept="image/*">
+              <span class="upload-status" id="pg-file-status"></span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row" id="pg-effect-row">
+          <div class="field"><label>블러(흐림) 강도 <b id="pg-blur-val">50</b>px <small>0 = 선명</small></label><input type="range" id="pg-blur" min="0" max="100" step="1" value="50"></div>
+          <div class="field"><label>사진 불투명도 <b id="pg-opacity-val">55</b>% <small>낮을수록 배경색과 섞여 연해져요</small></label><input type="range" id="pg-opacity" min="0" max="100" step="1" value="55"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('page_bg')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('page_bg')">취소</button>
+        </div>
+        <div class="status" id="pg-status"></div>
+      </div>
+      <div class="list" id="list-page_bg"></div>
+    </div>
+
+    <!-- 크롬창 탭/주소 -->
+    <div class="panel" data-panel="site_bgm">
+      <h2>BGM</h2>
+      <p class="desc">사이트 오른쪽 패널에서 재생되는 배경음악입니다. 여러 곡을 등록할 수 있고, 목록에서 끌어서 정한 순서대로 이어서 재생되며 이전/다음/셔플/반복 버튼으로 이동합니다. 곡마다 커버 이미지를 넣을 수 있고, 없으면 아래 '공통 커버 이미지'가 쓰입니다.</p>
+      <div class="card" data-section="site_bgm">
+        <h3 id="bg-form-title">BGM 설정</h3>
+        <input type="hidden" id="bg-id">
+        <div class="field-row">
+          <div class="field full">
+            <label>오디오 파일 URL (mp3 등, 또는 파일 선택)</label>
+            <input id="bg-image" placeholder="https://...">
+            <div class="upload-row">
+              <input type="file" id="bg-file" accept="audio/*">
+              <span class="upload-status" id="bg-file-status"></span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field full">
+            <label>이 곡의 커버 이미지 URL (선택 · 없으면 공통 커버 사용)</label>
+            <input id="bg-cover" placeholder="https://...">
+            <div class="upload-row">
+              <input type="file" id="bg-cover-file" accept="image/*">
+              <span class="upload-status" id="bg-cover-file-status"></span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>곡 제목</label><input id="bg-title" placeholder="예: Chocolate Cream"></div>
+          <div class="field"><label>아티스트</label><input id="bg-summary" placeholder="예: Laysha"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>정렬 순서</label><input id="bg-order" type="number" value="0"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('site_bgm')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('site_bgm')">취소</button>
+        </div>
+        <div class="status" id="bg-status"></div>
+      </div>
+      <div class="list" id="list-site_bgm"></div>
+
+      <div class="sub-title">공통 커버 이미지 (곡별 커버가 없을 때 쓰이는 재생 카드 위쪽 사각 이미지)</div>
+      <div class="card" data-section="bgm_cover">
+        <h3 id="bc-form-title">커버 이미지 설정</h3>
+        <input type="hidden" id="bc-id">
+        <div class="field-row">
+          <div class="field full">
+            <label>이미지 URL (또는 아래에서 파일 선택) — 등록하지 않으면 커버 영역이 표시되지 않습니다</label>
+            <input id="bc-image" placeholder="https://...">
+            <div class="upload-row">
+              <input type="file" id="bc-file" accept="image/*">
+              <span class="upload-status" id="bc-file-status"></span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>정렬 순서</label><input id="bc-order" type="number" value="0"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('bgm_cover')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('bgm_cover')">취소</button>
+        </div>
+        <div class="status" id="bc-status"></div>
+      </div>
+      <div class="list" id="list-bgm_cover"></div>
+    </div>
+
+    <!-- 기념일 -->
+    <div class="panel" data-panel="anniversary">
+      <h2>기념일</h2>
+      <p class="desc">오른쪽 패널에 표시되는 "함께한 지 OOO일째" 카운터입니다. 하나만 등록하세요.</p>
+      <div class="card" data-section="anniversary">
+        <h3 id="av-form-title">기념일 설정</h3>
+        <input type="hidden" id="av-id">
+        <div class="field-row">
+          <div class="field full"><label>라벨 텍스트</label><input id="av-title" placeholder="예: 함께한 지"></div>
+        </div>
+        <div class="field-row">
+          <div class="field full"><label>시작 날짜</label><input id="av-body" type="date"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>정렬 순서</label><input id="av-order" type="number" value="0"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('anniversary')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('anniversary')">취소</button>
+        </div>
+        <div class="status" id="av-status"></div>
+      </div>
+      <div class="list" id="list-anniversary"></div>
+    </div>
+
+    <!-- 테마 설정 -->
+    <div class="panel" data-panel="site_theme">
+      <h2>테마 설정</h2>
+      <p class="desc">포인트 색상, 오른쪽 메뉴 탭(홈·프로필·커미션·소설)별 배경/글자색, 메인 칩 배경/글자색, 사이드 패널 카드(재생·기념일) 배경, 모바일 상단 탭바 색을 항목별로 바꿉니다. 색상은 색상 선택기로 고르거나 코드를 입력하세요. 칩 안 글자 등 모든 문구는 "텍스트 (라벨)" 메뉴에서 바꿉니다. 같은 항목을 다시 등록하면 목록에 남아있는 항목이 각각 적용되니, 수정할 때는 기존 항목을 "수정"으로 바꿔주세요.</p>
+      <div class="card" data-section="site_theme">
+        <h3 id="th-form-title">새 항목 추가</h3>
+        <input type="hidden" id="th-id">
+        <div class="field-row">
+          <div class="field">
+            <label>항목</label>
+            <select id="th-category">
+              <optgroup label="공통">
+                <option value="accent">포인트 색상 (accent · 재생 플레이어 등)</option>
+              </optgroup>
+              <optgroup label="오른쪽 메뉴 탭 — 배경색">
+                <option value="tab_home">탭 배경 - 홈</option>
+                <option value="tab_profile">탭 배경 - 프로필</option>
+                <option value="tab_novel">탭 배경 - 소설</option>
+                <option value="tab_commission">탭 배경 - 커미션</option>
+                <option value="tab_active">탭 배경 - 현재 선택된 탭</option>
+              </optgroup>
+              <optgroup label="오른쪽 메뉴 탭 — 글자색">
+                <option value="tab_text_home">탭 글자 - 홈</option>
+                <option value="tab_text_profile">탭 글자 - 프로필</option>
+                <option value="tab_text_novel">탭 글자 - 소설</option>
+                <option value="tab_text_commission">탭 글자 - 커미션</option>
+                <option value="tab_active_text">탭 글자 - 현재 선택된 탭</option>
+              </optgroup>
+              <optgroup label="메인 칩 — 배경색">
+                <option value="tag_a">칩 배경색 - 소설</option>
+                <option value="tag_b">칩 배경색 - 낙서</option>
+                <option value="tag_c">칩 배경색 - 커미션</option>
+                <option value="tag_d">칩 배경색 - 프로필</option>
+              </optgroup>
+              <optgroup label="메인 칩 — 글자색">
+                <option value="chip_text_a">칩 글자색 - 소설</option>
+                <option value="chip_text_b">칩 글자색 - 낙서</option>
+                <option value="chip_text_c">칩 글자색 - 커미션</option>
+                <option value="chip_text_d">칩 글자색 - 프로필</option>
+              </optgroup>
+                          <optgroup label="오른쪽 사이드 패널 — 카드 배경색">
+                <option value="side_bgm_bg">재생 카드 배경</option>
+                <option value="side_anniv_bg">기념일 카드 배경</option>
+              </optgroup>
+              <optgroup label="모바일 탭바 — 배경색">
+                <option value="mtab_main">모바일 탭 배경 - 메인화면</option>
+                <option value="mtab_profile">모바일 탭 배경 - 프로필</option>
+                <option value="mtab_novel">모바일 탭 배경 - 소설</option>
+                <option value="mtab_gallery">모바일 탭 배경 - 그림갤러리</option>
+              </optgroup>
+              <optgroup label="모바일 탭바 — 글자색">
+                <option value="mtab_text_main">모바일 탭 글자 - 메인화면</option>
+                <option value="mtab_text_profile">모바일 탭 글자 - 프로필</option>
+                <option value="mtab_text_novel">모바일 탭 글자 - 소설</option>
+                <option value="mtab_text_gallery">모바일 탭 글자 - 그림갤러리</option>
+              </optgroup>
+                        </select>
+          </div>
+          <div class="field"><label>정렬 순서</label><input id="th-order" type="number" value="0"></div>
+        </div>
+        <div class="field-row">
+          <div class="field full"><label>색상 (색상 선택기 또는 코드 예: #7B1CFF)</label><input id="th-value" placeholder="#7B1CFF"><div class="color-row" id="th-color-row"><input type="color" id="th-color" value="#7b1cff"><span>색상 선택기</span></div></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('site_theme')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('site_theme')">취소</button>
+        </div>
+        <div class="status" id="th-status"></div>
+      </div>
+      <div class="list" id="list-site_theme"></div>
+    </div>
+
+    <!-- 폰트 -->
+    <div class="panel" data-panel="site_font">
+      <h2>폰트</h2>
+      <p class="desc">사이트 전체 글꼴입니다. 하나만 등록하세요. 등록하지 않으면 기본 폰트(SUITE)가 쓰이고, 지정한 폰트를 불러오지 못하면 SUITE로 대체됩니다. 삭제하면 기본 폰트로 돌아갑니다.</p>
+      <div class="card" data-section="site_font">
+        <h3 id="sf-form-title">폰트 설정</h3>
+        <input type="hidden" id="sf-id">
+        <div class="field-row">
+          <div class="field">
+            <label>방식</label>
+            <select id="sf-category">
+              <option value="preset">추천 폰트 (Google Fonts)</option>
+              <option value="file">글꼴 파일 (woff2 / woff / ttf / otf)</option>
+              <option value="css">웹폰트 CSS 링크</option>
+            </select>
+          </div>
+          <div class="field"><label>정렬 순서</label><input id="sf-order" type="number" value="0"></div>
+        </div>
+        <div class="field-row">
+          <div class="field full" id="sf-preset-wrap">
+            <label>추천 폰트</label>
+            <select id="sf-preset"></select>
+          </div>
+          <div class="field full" id="sf-name-wrap" hidden>
+            <label>폰트 이름 (font-family, 예: Pretendard)</label>
+            <input id="sf-name" placeholder="예: Pretendard">
+          </div>
+          <div class="field full" id="sf-url-wrap" hidden>
+            <label id="sf-url-label">글꼴 파일 URL (또는 아래에서 파일 선택)</label>
+            <input id="sf-url" placeholder="https://...">
+            <div class="upload-row" id="sf-upload-row">
+              <input type="file" id="sf-file" accept=".woff2,.woff,.ttf,.otf,font/*">
+              <span class="upload-status" id="sf-file-status"></span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field full">
+            <label>미리보기</label>
+            <div class="font-preview" id="sf-preview">가나다라마바사 ABC abc 123<small>박도현 × 유민 · DOHYUNYUMIN</small></div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('site_font')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('site_font')">취소</button>
+        </div>
+        <div class="status" id="sf-status"></div>
+      </div>
+      <div class="list" id="list-site_font"></div>
+    </div>
+
+    <!-- 텍스트 (라벨) -->
+    <div class="panel" data-panel="site_text">
+      <h2>텍스트 (라벨)</h2>
+      <p class="desc">메인 페이지에 보이는 고정 문구를 한 곳에서 모두 수정합니다. 비워 두면 기본 문구가 쓰입니다. 같은 이름은 여러 곳에 함께 바뀝니다(예: 사이트 이름은 상단바와 왼쪽 프로필 칼럼). 캐릭터 이름 탭(박도현 / 유민)은 프로필 데이터와 연결돼 있어 이곳에서 바꾸지 않습니다.</p>
+      <div class="card" data-section="site_text">
+        <h3>문구 설정</h3>
+        <div class="field-row" id="tx-grid"></div>
+        <div class="form-actions">
+          <button class="btn btn-primary" id="tx-save" type="button">전체 저장</button>
+          <button class="btn btn-ghost" id="tx-clear" type="button">모두 기본값으로 비우기</button>
+        </div>
+        <div class="status" id="tx-status"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+//  설정
+// ══════════════════════════════════════
+const SUPABASE_URL = 'https://gsuimspbkmsimoboddci.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_QBbODY8dYcrjArbsSfQG2w_RDvvxvuM';
+const TABLE        = 'domination_posts';
+const STORAGE_BUCKET = 'dominverse-media';
+
+const headers = {
+  'Content-Type':'application/json',
+  'apikey': SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`,
+};
+
+// ══════════════════════════════════════
+//  비밀번호 게이트
+//  ※ 저장된 로그인 확인(showApp 자동 호출)은 SECTIONS 등 모든 선언이 끝난
+//    스크립트 맨 아래에서 실행합니다. (위에서 호출하면 const 초기화 전에
+//    initAll()이 실행되어 오류가 나고, 그 아래 메뉴 전환 코드가 등록되지 않음)
+// ══════════════════════════════════════
+const ADMIN_PASSWORD = 'doyumin'; // ← 원하는 비밀번호로 직접 수정하세요
+const AUTH_KEY = 'dv_admin_authed';
+
+function showApp(){
+  document.getElementById('pw-gate').style.display = 'none';
+  document.getElementById('app').classList.add('ready');
+  initAll();
+}
+function tryPassword(){
+  const val = document.getElementById('pw-input').value;
+  if(val === ADMIN_PASSWORD){
+    localStorage.setItem(AUTH_KEY, 'yes');
+    showApp();
+  } else {
+    document.getElementById('pw-err').textContent = '비밀번호가 올바르지 않습니다.';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+document.getElementById('pw-submit').addEventListener('click', tryPassword);
+document.getElementById('pw-input').addEventListener('keydown', e=>{ if(e.key==='Enter') tryPassword(); });
+
+// ══════════════════════════════════════
+//  Supabase Storage 파일 업로드
+// ══════════════════════════════════════
+async function uploadToStorage(file, prefix){
+  const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+  const path = `${prefix}/${Date.now()}_${safeName}`;
+  const r = await fetch(`${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${path}`, {
+    method:'POST',
+    headers:{
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': file.type || 'application/octet-stream',
+      'x-upsert': 'true',
+    },
+    body: file
+  });
+  if(!r.ok){
+    const t = await r.text().catch(()=> '');
+    throw new Error(`업로드 실패 (${r.status}) ${t}`);
+  }
+  return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${path}`;
+}
+
+function wireFileUpload(fileInputId, targetInputId, statusId, prefix){
+  const fileEl = document.getElementById(fileInputId);
+  if(!fileEl) return;
+  fileEl.addEventListener('change', async ()=>{
+    const file = fileEl.files[0];
+    if(!file) return;
+    const statusEl = document.getElementById(statusId);
+    if(statusEl) statusEl.textContent = '업로드 중…';
+    try{
+      const url = await uploadToStorage(file, prefix);
+      document.getElementById(targetInputId).value = url;
+      if(statusEl) statusEl.textContent = '업로드 완료';
+      fileEl.dispatchEvent(new Event('_uploaded'));
+      document.getElementById(targetInputId).dispatchEvent(new Event('input'));
+    }catch(e){
+      if(statusEl) statusEl.textContent = '오류: ' + e.message;
+    }
+  });
+}
+wireFileUpload('pf-file', 'pf-image', 'pf-file-status', 'profile');
+wireFileUpload('gl-file', 'gl-image', 'gl-file-status', 'gallery');
+wireFileUpload('sk-file', 'sk-image', 'sk-file-status', 'sticker');
+wireFileUpload('pg-file', 'pg-value', 'pg-file-status', 'bg');
+wireFileUpload('sb-file', 'sb-value', 'sb-file-status', 'stickerbg');
+wireFileUpload('sf-file', 'sf-url', 'sf-file-status', 'font');
+wireFileUpload('mt-file', 'mt-image', 'mt-file-status', 'thumb');
+(function(){
+  const f = document.getElementById('gl-multi-file'); if(!f) return;
+  f.addEventListener('change', async ()=>{
+    const files = [...f.files]; if(!files.length) return;
+    const st = document.getElementById('gl-multi-status'); const ta = document.getElementById('gl-extra');
+    let done = 0;
+    try{
+      for(const file of files){
+        st.textContent = '업로드 중… ('+(done+1)+'/'+files.length+')';
+        const url = await uploadToStorage(file, 'gallery');
+        ta.value = (ta.value.trim() ? ta.value.replace(/\s+$/,'') + '\n' : '') + url;
+        done++;
+      }
+      st.textContent = done + '장 업로드 완료';
+    }catch(e){ st.textContent = '오류: ' + e.message + ' (' + done + '장 완료)'; }
+    f.value = '';
+  });
+})();
+wireFileUpload('mp-file', 'mp-image', 'mp-file-status', 'mainprofile');
+wireFileUpload('ld-file', 'ld-image', 'ld-file-status', 'loading');
+wireFileUpload('bg-file', 'bg-image', 'bg-file-status', 'bgm');
+wireFileUpload('bg-cover-file', 'bg-cover', 'bg-cover-file-status', 'bgmtrackcover');
+wireFileUpload('bc-file', 'bc-image', 'bc-file-status', 'bgmcover');
+
+// ══════════════════════════════════════
+//  탭 전환
+// ══════════════════════════════════════
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelector('.panel[data-panel="'+btn.dataset.panel+'"]').classList.add('active');
+  });
+});
+
+// ══════════════════════════════════════
+//  Supabase helpers
+// ══════════════════════════════════════
+async function dbSelect(section){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?select=*&section=eq.${section}&order=sort_order.asc`,{headers});
+  if(!r.ok) throw new Error('조회 실패 ('+r.status+')');
+  return r.json();
+}
+async function dbInsert(row){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`,{
+    method:'POST', headers:{...headers,'Prefer':'return=representation'},
+    body: JSON.stringify(row)
+  });
+  if(!r.ok) throw new Error('저장 실패 ('+r.status+')');
+  return r.json();
+}
+async function dbUpdate(id, row){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?id=eq.${id}`,{
+    method:'PATCH', headers:{...headers,'Prefer':'return=representation'},
+    body: JSON.stringify(row)
+  });
+  if(!r.ok) throw new Error('수정 실패 ('+r.status+')');
+  return r.json();
+}
+async function dbDelete(id){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?id=eq.${id}`,{ method:'DELETE', headers });
+  if(!r.ok) throw new Error('삭제 실패 ('+r.status+')');
+}
+
+// ══════════════════════════════════════
+//  섹션별 설정
+// ══════════════════════════════════════
+const SECTIONS = {
+  profile:{
+    fields:['character','au_label','summary','body','image_url','sort_order'],
+    read: ()=>({
+      character: val('pf-character'), au_label: val('pf-au'), summary: val('pf-summary'),
+      body: val('pf-body'), image_url: val('pf-image'), sort_order: numval('pf-order')
+    }),
+    fill: (it)=>{
+      setval('pf-character',it.character); setval('pf-au',it.au_label); setval('pf-summary',it.summary);
+      setval('pf-body',it.body); setval('pf-image',it.image_url); setval('pf-order',it.sort_order);
+    },
+    idEl:'pf-id', statusEl:'pf-status', titleEl:'pf-form-title',
+    render: (it)=> renderRow(it, it.character+' · '+(it.au_label||'기본'), it.summary||'', it.character)
+  },
+  novel:{
+    fields:['episode_no','title','body'],
+    read: ()=>({
+      episode_no: numval('nv-episode'), title: val('nv-title'), body: val('nv-body'), sort_order: numval('nv-episode')
+    }),
+    fill: (it)=>{ setval('nv-episode',it.episode_no); setval('nv-title',it.title); setval('nv-body',it.body); },
+    idEl:'nv-id', statusEl:'nv-status', titleEl:'nv-form-title',
+    render: (it)=> renderRow(it, (it.episode_no||'-')+'화 · '+(it.title||'제목 없음'), (it.body||'').slice(0,40))
+  },
+  gallery:{
+    fields:['category','title','image_url','body','sort_order'],
+    read: ()=>({
+      category: val('gl-category'), title: val('gl-title'), image_url: val('gl-image'), body: val('gl-extra'), sort_order: numval('gl-order')
+    }),
+    fill: (it)=>{ setval('gl-category',it.category); setval('gl-title',it.title); setval('gl-image',it.image_url); setval('gl-extra',it.body); setval('gl-order',it.sort_order); },
+    idEl:'gl-id', statusEl:'gl-status', titleEl:'gl-form-title',
+    render: (it)=>{ const n = (it.image_url?1:0) + String(it.body||'').split(/\r?\n/).filter(x=>x.trim()).length; return renderRow(it, (it.title || '(제목 없음)') + (n>1 ? '  ['+n+'장 묶음]' : ''), '', it.category); }
+  },
+  sticker:{
+    fields:['image_url','x_pos','y_pos','width_px','rotation','sort_order'],
+    read: ()=>({
+      image_url: val('sk-image'), x_pos: numval('sk-x'), y_pos: numval('sk-y'),
+      width_px: numval('sk-width'), rotation: numval('sk-rotation'), sort_order: numval('sk-order')
+    }),
+    fill: (it)=>{
+      setval('sk-image',it.image_url); setval('sk-x',it.x_pos); setval('sk-y',it.y_pos);
+      setval('sk-width',it.width_px); setval('sk-rotation',it.rotation); setval('sk-order',it.sort_order);
+    },
+    idEl:'sk-id', statusEl:'sk-status', titleEl:'sk-form-title',
+    render: (it)=> renderRow(it, '스티커', `X ${it.x_pos}% · Y ${it.y_pos}% · ${it.width_px}px · ${it.rotation}°`)
+  },
+  page_bg:{
+    fields:['category','image_url','sort_order'],
+    // 블러(px)는 title, 불투명도(%)는 summary 칸에 저장 (DB 열 추가 불필요)
+    read: ()=>({
+      category: val('pg-category'), image_url: val('pg-value'), sort_order: numval('pg-order'),
+      title: val('pg-blur'), summary: val('pg-opacity')
+    }),
+    fill: (it)=>{
+      setval('pg-category',it.category); setval('pg-value',it.image_url); setval('pg-order',it.sort_order);
+      setval('pg-blur', (it.title!==null && it.title!==undefined && it.title!=='' && !isNaN(+it.title)) ? it.title : 50);
+      setval('pg-opacity', (it.summary!==null && it.summary!==undefined && it.summary!=='' && !isNaN(+it.summary)) ? it.summary : 55);
+      updateRangeLabels();
+    },
+    idEl:'pg-id', statusEl:'pg-status', titleEl:'pg-form-title',
+    render: (it)=>{
+      const isColor = it.category === 'color';
+      const swatch = isColor
+        ? `<span class="noimg" style="background:${escapeHtml(it.image_url||'')}"></span>`
+        : (it.image_url ? `<img src="${escapeHtml(it.image_url)}" alt="">` : `<span class="noimg"></span>`);
+      const fx = (!isColor) ? ` · 블러 ${escapeHtml(it.title||50)}px · 불투명도 ${escapeHtml(it.summary||55)}%` : '';
+      return `
+        <div class="item-row">
+          ${swatch}
+          <div class="item-meta"><b>${isColor ? '단색' : '사진'}</b><span>${escapeHtml(it.image_url||'')}${fx}</span></div>
+          <div class="item-actions">
+            <button onclick="editItem('page_bg', ${it.id})">수정</button>
+            <button class="del" onclick="removeItem('page_bg', ${it.id})">삭제</button>
+          </div>
+        </div>`;
+    }
+  },
+  sticker_bg:{
+    fields:['category','image_url','sort_order'],
+    read: ()=>({
+      category: val('sb-category'), image_url: val('sb-value'), sort_order: numval('sb-order')
+    }),
+    fill: (it)=>{ setval('sb-category',it.category); setval('sb-value',it.image_url); setval('sb-order',it.sort_order); },
+    idEl:'sb-id', statusEl:'sb-status', titleEl:'sb-form-title',
+    render: (it)=>{
+      const isColor = it.category === 'color';
+      const swatch = isColor
+        ? `<span class="noimg" style="background:${escapeHtml(it.image_url||'')}"></span>`
+        : (it.image_url ? `<img src="${escapeHtml(it.image_url)}" alt="">` : `<span class="noimg"></span>`);
+      return `
+        <div class="item-row">
+          ${swatch}
+          <div class="item-meta"><b>${isColor ? '단색' : '사진'}</b><span>${escapeHtml(it.image_url||'')}</span></div>
+          <div class="item-actions">
+            <button onclick="editItem('sticker_bg', ${it.id})">수정</button>
+            <button class="del" onclick="removeItem('sticker_bg', ${it.id})">삭제</button>
+          </div>
+        </div>`;
+    }
+  },
+  site_font:{
+    fields:['category','title','image_url','sort_order'],
+    read: ()=>{
+      const cat = val('sf-category');
+      return {
+        category: cat,
+        title: cat==='preset' ? val('sf-preset') : val('sf-name'),
+        image_url: cat==='preset' ? '' : val('sf-url'),
+        sort_order: numval('sf-order')
+      };
+    },
+    fill: (it)=>{
+      setval('sf-category',it.category||'preset');
+      if((it.category||'preset')==='preset') setval('sf-preset',it.title); else setval('sf-name',it.title);
+      setval('sf-url',it.image_url); setval('sf-order',it.sort_order);
+      updateFontFields();
+    },
+    idEl:'sf-id', statusEl:'sf-status', titleEl:'sf-form-title',
+    render: (it)=>{
+      const typeMap = { preset:'추천 폰트', file:'글꼴 파일', css:'웹폰트 CSS' };
+      return `
+        <div class="item-row">
+          <span class="noimg"></span>
+          <div class="item-meta"><b>${escapeHtml(it.title||'(이름 없음)')}</b><span>${escapeHtml(typeMap[it.category]||it.category||'')}${it.image_url ? ' · '+escapeHtml(it.image_url) : ''}</span></div>
+          <div class="item-actions">
+            <button onclick="editItem('site_font', ${it.id})">수정</button>
+            <button class="del" onclick="removeItem('site_font', ${it.id})">삭제</button>
+          </div>
+        </div>`;
+    }
+  },
+  menu_thumb:{
+    fields:['image_url','sort_order'],
+    read: ()=>({ image_url: val('mt-image'), sort_order: numval('mt-order') }),
+    fill: (it)=>{ setval('mt-image',it.image_url); setval('mt-order',it.sort_order); },
+    idEl:'mt-id', statusEl:'mt-status', titleEl:'mt-form-title',
+    render: (it)=> renderRow(it, '메뉴 썸네일', '')
+  },
+  bgm_cover:{
+    fields:['image_url','sort_order'],
+    read: ()=>({ image_url: val('bc-image'), sort_order: numval('bc-order') }),
+    fill: (it)=>{ setval('bc-image',it.image_url); setval('bc-order',it.sort_order); },
+    idEl:'bc-id', statusEl:'bc-status', titleEl:'bc-form-title',
+    render: (it)=> renderRow(it, 'BGM 커버 이미지', '')
+  },
+  loading_logo:{
+    fields:['image_url','title','sort_order'],
+    read: ()=>({ image_url: val('ld-image'), title: val('ld-title'), sort_order: numval('ld-order') }),
+    fill: (it)=>{ setval('ld-image',it.image_url); setval('ld-title',it.title); setval('ld-order',it.sort_order); },
+    idEl:'ld-id', statusEl:'ld-status', titleEl:'ld-form-title',
+    render: (it)=> renderRow(it, it.title || '로딩 로고', '')
+  },
+  main_profile:{
+    fields:['image_url','sort_order'],
+    read: ()=>({ image_url: val('mp-image'), sort_order: numval('mp-order') }),
+    fill: (it)=>{ setval('mp-image',it.image_url); setval('mp-order',it.sort_order); },
+    idEl:'mp-id', statusEl:'mp-status', titleEl:'mp-form-title',
+    render: (it)=> renderRow(it, '메인 프로필 사진', '')
+  },
+  site_bgm:{
+    fields:['image_url','title','summary','body','sort_order'],
+    read: ()=>({
+      image_url: val('bg-image'), title: val('bg-title'), summary: val('bg-summary'), body: val('bg-cover'), sort_order: numval('bg-order')
+    }),
+    fill: (it)=>{ setval('bg-image',it.image_url); setval('bg-cover',it.body); setval('bg-title',it.title); setval('bg-summary',it.summary); setval('bg-order',it.sort_order); },
+    idEl:'bg-id', statusEl:'bg-status', titleEl:'bg-form-title',
+    render: (it)=> renderRow(it, it.title || '(제목 없음)', it.summary || '')
+  },
+  anniversary:{
+    fields:['title','body','sort_order'],
+    read: ()=>({
+      title: val('av-title'), body: val('av-body'), sort_order: numval('av-order')
+    }),
+    fill: (it)=>{ setval('av-title',it.title); setval('av-body',it.body); setval('av-order',it.sort_order); },
+    idEl:'av-id', statusEl:'av-status', titleEl:'av-form-title',
+    render: (it)=> renderRow(it, it.title || '함께한 지', it.body || '')
+  },
+  site_theme:{
+    fields:['category','image_url','sort_order'],
+    read: ()=>({
+      category: val('th-category'), image_url: val('th-value'), sort_order: numval('th-order')
+    }),
+    fill: (it)=>{ setval('th-category',it.category); setval('th-value',it.image_url); setval('th-order',it.sort_order); },
+    idEl:'th-id', statusEl:'th-status', titleEl:'th-form-title',
+    render: (it)=>{
+      const labelMap = {
+        accent:'포인트 색상', tag_a:'칩 배경색 - 소설', tag_b:'칩 배경색 - 낙서',
+        tag_c:'칩 배경색 - 커미션', tag_d:'칩 배경색 - 프로필',
+        tab_home:'탭 배경 - 홈', tab_profile:'탭 배경 - 프로필', tab_text_profile:'탭 글자 - 프로필', tab_novel:'탭 배경 - 소설', tab_commission:'탭 배경 - 커미션', tab_active:'탭 배경 - 선택된 탭',
+        tab_text_home:'탭 글자 - 홈', tab_text_novel:'탭 글자 - 소설', tab_text_commission:'탭 글자 - 커미션', tab_active_text:'탭 글자 - 선택된 탭',
+        chip_text_a:'칩 글자색 - 소설', chip_text_b:'칩 글자색 - 낙서', chip_text_c:'칩 글자색 - 커미션', chip_text_d:'칩 글자색 - 프로필',
+        side_bgm_bg:'재생 카드 배경', side_anniv_bg:'기념일 카드 배경',
+        mtab_main:'모바일 탭 배경 - 메인화면', mtab_profile:'모바일 탭 배경 - 프로필', mtab_novel:'모바일 탭 배경 - 소설', mtab_gallery:'모바일 탭 배경 - 그림갤러리',
+        mtab_text_main:'모바일 탭 글자 - 메인화면', mtab_text_profile:'모바일 탭 글자 - 프로필', mtab_text_novel:'모바일 탭 글자 - 소설', mtab_text_gallery:'모바일 탭 글자 - 그림갤러리',
+        label_novel:'칩 글자 - 소설', label_doodle:'칩 글자 - 낙서',
+        label_commission:'칩 글자 - 커미션', label_profile:'칩 글자 - 프로필'
+      };
+      const isColor = /^#[0-9a-fA-F]{3,8}$/.test(it.image_url||'');
+      const swatch = isColor
+        ? `<span class="noimg" style="background:${escapeHtml(it.image_url)}"></span>`
+        : `<span class="noimg"></span>`;
+      return `
+        <div class="item-row">
+          ${swatch}
+          <div class="item-meta"><b>${escapeHtml(labelMap[it.category]||it.category)}</b><span>${escapeHtml(it.image_url||'')}</span></div>
+          <div class="item-actions">
+            <button onclick="editItem('site_theme', ${it.id})">수정</button>
+            <button class="del" onclick="removeItem('site_theme', ${it.id})">삭제</button>
+          </div>
+        </div>`;
+    }
+  }
+};
+
+function val(id){ return document.getElementById(id).value.trim(); }
+function numval(id){ const v = document.getElementById(id).value; return v===''? 0 : Number(v); }
+function setval(id,v){ document.getElementById(id).value = (v===undefined||v===null)? '' : v; }
+
+function renderRow(it, title, sub, tag){
+  const img = it.image_url
+    ? `<img src="${escapeHtml(it.image_url)}" alt="">`
+    : `<span class="noimg"></span>`;
+  return `
+    <div class="item-row">
+      ${img}
+      <div class="item-meta"><b>${escapeHtml(title)}</b><span>${escapeHtml(sub||'')}</span></div>
+      ${tag ? `<span class="item-tag">${escapeHtml(tag)}</span>` : ''}
+      <div class="item-actions">
+        <button onclick="editItem('${it.__section}', ${it.id})">수정</button>
+        <button class="del" onclick="removeItem('${it.__section}', ${it.id})">삭제</button>
+      </div>
+    </div>`;
+}
+function escapeHtml(s){
+  return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+const CACHE = {}; // section -> items
+
+const DRAG_SECTIONS = ['profile','gallery','sticker','site_bgm'];
+function enableDragSort(section, listEl, items){
+  const rows = [...listEl.querySelectorAll(':scope > .item-row')];
+  if(!listEl.previousElementSibling || !listEl.previousElementSibling.classList.contains('drag-hint')){
+    const h = document.createElement('div'); h.className = 'drag-hint';
+    h.textContent = '↕ 항목 왼쪽의 ⋮⋮ 를 잡고 위아래로 끌어서 순서를 바꾸세요. 놓는 즉시 저장됩니다.' + (section==='sticker' ? ' (아래에 있을수록 위에 겹쳐 보입니다)' : '');
+    listEl.parentNode.insertBefore(h, listEl);
+  }
+  let dragEl = null;
+  rows.forEach((row,i)=>{
+    row.dataset.id = items[i].id;
+    row.draggable = true;
+    const hd = document.createElement('span'); hd.className = 'drag-handle'; hd.textContent = '⋮⋮'; hd.title = '끌어서 순서 변경';
+    row.insertBefore(hd, row.firstChild);
+    row.addEventListener('dragstart', e=>{ dragEl = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; try{ e.dataTransfer.setData('text/plain', row.dataset.id); }catch(_){} });
+    row.addEventListener('dragend', ()=>{ row.classList.remove('dragging'); rows.forEach(r=>r.classList.remove('drop-before','drop-after')); dragEl = null; });
+    row.addEventListener('dragover', e=>{
+      if(!dragEl || dragEl === row) return;
+      e.preventDefault();
+      const r = row.getBoundingClientRect(); const before = e.clientY < r.top + r.height/2;
+      rows.forEach(x=>x.classList.remove('drop-before','drop-after'));
+      row.classList.add(before ? 'drop-before' : 'drop-after');
+    });
+    row.addEventListener('drop', async e=>{
+      if(!dragEl || dragEl === row) return;
+      e.preventDefault();
+      const r = row.getBoundingClientRect(); const before = e.clientY < r.top + r.height/2;
+      listEl.insertBefore(dragEl, before ? row : row.nextSibling);
+      const ids = [...listEl.querySelectorAll(':scope > .item-row')].map(x=>+x.dataset.id);
+      await saveOrder(section, ids, items, listEl);
+    });
+  });
+}
+async function saveOrder(section, ids, items, listEl){
+  const hint = listEl.previousElementSibling;
+  const orig = hint && hint.classList.contains('drag-hint') ? hint.textContent : '';
+  if(hint) hint.textContent = '순서 저장 중…';
+  try{
+    const changes = [];
+    ids.forEach((id,i)=>{ const it = items.find(x=>x.id===id); if(it && +it.sort_order !== i) changes.push(dbUpdate(id, { sort_order: i })); });
+    await Promise.all(changes);
+    ids.forEach((id,i)=>{ const it = items.find(x=>x.id===id); if(it) it.sort_order = i; });
+    if(hint) hint.textContent = '순서가 저장되었습니다.';
+    setTimeout(()=>{ if(hint) hint.textContent = orig; }, 1800);
+  }catch(e){
+    if(hint) hint.textContent = '순서 저장 실패: ' + e.message;
+    loadSection(section);
+  }
+}
+async function loadSection(section){
+  const listEl = document.getElementById('list-'+section);
+  listEl.innerHTML = `<div class="empty">불러오는 중…</div>`;
+  try{
+    const items = await dbSelect(section);
+    items.forEach(it=>it.__section = section);
+    CACHE[section] = items;
+    if(section==='sticker_bg') applyStickerBgPreview(items);
+    if(items.length===0){
+      listEl.innerHTML = `<div class="empty">등록된 항목이 없습니다.</div>`;
+    } else {
+      listEl.innerHTML = items.map(SECTIONS[section].render).join('');
+      if(DRAG_SECTIONS.includes(section)) enableDragSort(section, listEl, items);
+    }
+  } catch(e){
+    listEl.innerHTML = `<div class="empty">불러오기 실패: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function submitItem(section){
+  const cfg = SECTIONS[section];
+  const idEl = document.getElementById(cfg.idEl);
+  const statusEl = document.getElementById(cfg.statusEl);
+  const row = { section, ...cfg.read() };
+  if(DRAG_SECTIONS.includes(section) && !idEl.value){      // 새 항목은 목록 맨 아래로
+    const cur = CACHE[section] || [];
+    row.sort_order = cur.length ? Math.max(...cur.map(x=>+x.sort_order||0)) + 1 : 0;
+  }
+  statusEl.textContent = '저장 중…';
+  try{
+    if(idEl.value){
+      await dbUpdate(idEl.value, row);
+    } else {
+      await dbInsert(row);
+    }
+    statusEl.textContent = '저장되었습니다.';
+    resetForm(section);
+    loadSection(section);
+  } catch(e){
+    statusEl.textContent = '오류: ' + e.message;
+  }
+}
+
+function editItem(section, id){
+  const it = (CACHE[section]||[]).find(x=>x.id===id);
+  if(!it) return;
+  const cfg = SECTIONS[section];
+  document.getElementById(cfg.idEl).value = id;
+  document.getElementById(cfg.titleEl).textContent = '항목 수정';
+  cfg.fill(it);
+  if(section==='sticker'){ updateSkMarkerFromFields(); updateSkMarkerImage(); }
+  updateColorRows();
+  const _card = document.querySelector('.card[data-section="'+section+'"]'); if(_card) _card.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+async function removeItem(section, id){
+  if(!confirm('삭제하시겠습니까?')) return;
+  try{
+    await dbDelete(id);
+    loadSection(section);
+  } catch(e){
+    alert('삭제 실패: ' + e.message);
+  }
+}
+
+function resetForm(section){
+  const cfg = SECTIONS[section];
+  document.getElementById(cfg.idEl).value = '';
+  document.getElementById(cfg.titleEl).textContent = '새 항목 추가';
+  document.getElementById(cfg.statusEl).textContent = '';
+  document.querySelectorAll('.card[data-section="'+section+'"] input, .card[data-section="'+section+'"] textarea')
+    .forEach(el=>{
+      if(el.type==='hidden') return;
+      if(el.type==='number') el.value='0';
+      else if(el.type==='range' || el.type==='color') el.value = el.defaultValue;
+      else el.value='';
+    });
+  if(section==='page_bg') updateRangeLabels();
+  updateColorRows();
+  if(section==='sticker'){
+    setval('sk-x',50); setval('sk-y',50);
+    updateSkMarkerFromFields(); updateSkMarkerImage();
+  }
+  if(section==='site_font'){
+    document.getElementById('sf-category').value = 'preset';
+    updateFontFields();
+  }
+}
+
+// 스티커 위치 미리보기: 마커 <-> X/Y 입력값 동기화
+function updateSkMarkerFromFields(){
+  const x = parseFloat(document.getElementById('sk-x').value) || 0;
+  const y = parseFloat(document.getElementById('sk-y').value) || 0;
+  const marker = document.getElementById('skMarker');
+  marker.style.left = x + '%';
+  marker.style.top = y + '%';
+}
+function updateSkMarkerImage(){
+  const url = document.getElementById('sk-image').value.trim();
+  const marker = document.getElementById('skMarker');
+  marker.style.backgroundImage = url ? `url('${url}')` : '';
+}
+function setSkPositionFromEvent(clientX, clientY){
+  const rect = document.getElementById('skPreview').getBoundingClientRect();
+  let px = ((clientX - rect.left) / rect.width) * 100;
+  let py = ((clientY - rect.top) / rect.height) * 100;
+  px = Math.max(0, Math.min(100, px));
+  py = Math.max(0, Math.min(100, py));
+  setval('sk-x', Math.round(px));
+  setval('sk-y', Math.round(py));
+  updateSkMarkerFromFields();
+}
+document.getElementById('sk-x').addEventListener('input', updateSkMarkerFromFields);
+document.getElementById('sk-y').addEventListener('input', updateSkMarkerFromFields);
+document.getElementById('sk-image').addEventListener('input', updateSkMarkerImage);
+document.getElementById('skPreview').addEventListener('click', e=>{
+  if(e.target.id === 'skMarker') return;
+  setSkPositionFromEvent(e.clientX, e.clientY);
+});
+document.getElementById('skMarker').addEventListener('mousedown', e=>{
+  e.preventDefault(); e.stopPropagation();
+  function onMove(e){ setSkPositionFromEvent(e.clientX, e.clientY); }
+  function onUp(){ document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+});
+updateSkMarkerFromFields();
+
+// ══════════════════════════════════════
+//  폰트: 추천 목록 / 불러오기 / 미리보기
+//  (메인 페이지 dominverse.html 의 FONT_PRESETS 와 같은 목록)
+// ══════════════════════════════════════
+const FONT_PRESETS = {
+  'Noto Sans KR':'wght@400;500;700', 'Noto Serif KR':'wght@400;700',
+  'Nanum Gothic':'wght@400;700', 'Nanum Myeongjo':'wght@400;700',
+  'Gowun Batang':'wght@400;700', 'Gowun Dodum':'',
+  'IBM Plex Sans KR':'wght@400;500;700', 'Gothic A1':'wght@400;500;700',
+  'Black Han Sans':'', 'Jua':'', 'Do Hyeon':'', 'Song Myung':'', 'Hi Melody':'', 'Yeon Sung':''
+};
+(function buildPresetOptions(){
+  const sel = document.getElementById('sf-preset');
+  sel.innerHTML = Object.keys(FONT_PRESETS).map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+})();
+
+const LOADED_FONTS = new Set();
+function cleanFamily(n){ return String(n||'').replace(/["'\\<>]/g,'').trim(); }
+// 폰트를 문서에 불러오고 font-family 값을 돌려줌
+function injectFont(cat, name, url){
+  name = cleanFamily(name);
+  if(!name) return '';
+  const key = cat+'|'+name+'|'+url;
+  if(!LOADED_FONTS.has(key)){
+    LOADED_FONTS.add(key);
+    if(cat==='preset'){
+      const spec = FONT_PRESETS[name];
+      const l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family='+encodeURIComponent(name).replace(/%20/g,'+')+(spec?':'+spec:'')+'&display=swap';
+      document.head.appendChild(l);
+    } else if(cat==='css' && url){
+      const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = url; document.head.appendChild(l);
+    } else if(cat==='file' && url){
+      const st = document.createElement('style');
+      st.textContent = `@font-face{font-family:"${name}";src:url("${url.replace(/"/g,'%22')}");font-weight:100 900;font-display:swap;}`;
+      document.head.appendChild(st);
+    }
+  }
+  return `"${name}"`;
+}
+function updateFontFields(){
+  const cat = document.getElementById('sf-category').value;
+  document.getElementById('sf-preset-wrap').hidden = cat!=='preset';
+  document.getElementById('sf-name-wrap').hidden = cat==='preset';
+  document.getElementById('sf-url-wrap').hidden = cat==='preset';
+  document.getElementById('sf-upload-row').hidden = cat!=='file';
+  document.getElementById('sf-url-label').textContent = cat==='css'
+    ? '웹폰트 CSS 링크 (예: https://cdn.jsdelivr.net/.../pretendard.css)'
+    : '글꼴 파일 URL (또는 아래에서 파일 선택)';
+  refreshFontPreview();
+}
+function refreshFontPreview(){
+  const cat = document.getElementById('sf-category').value;
+  const name = cat==='preset' ? document.getElementById('sf-preset').value : document.getElementById('sf-name').value;
+  const url = cat==='preset' ? '' : document.getElementById('sf-url').value.trim();
+  const fam = injectFont(cat, name, url);
+  document.getElementById('sf-preview').style.fontFamily = fam ? `${fam}, 'Pretendard', sans-serif` : '';
+}
+['sf-category','sf-preset'].forEach(id=>document.getElementById(id).addEventListener('change', updateFontFields));
+['sf-name','sf-url'].forEach(id=>document.getElementById(id).addEventListener('input', refreshFontPreview));
+updateFontFields();
+
+// ══════════════════════════════════════
+//  컬러피커 (색상 선택기 ↔ 코드 입력 동기화)
+// ══════════════════════════════════════
+function syncColorPicker(textId, pickerId){
+  const v = document.getElementById(textId).value.trim();
+  if(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)){
+    const h = v.length===4 ? '#'+v[1]+v[1]+v[2]+v[2]+v[3]+v[3] : v;
+    document.getElementById(pickerId).value = h.toLowerCase();
+  }
+}
+function wireColorPicker(textId, pickerId){
+  const t = document.getElementById(textId), c = document.getElementById(pickerId);
+  c.addEventListener('input', ()=>{ t.value = c.value; });
+  t.addEventListener('input', ()=>syncColorPicker(textId, pickerId));
+}
+wireColorPicker('pg-value','pg-color');
+wireColorPicker('sb-value','sb-color');
+wireColorPicker('th-value','th-color');
+// 종류가 '단색'일 때만 색상 선택기를 보이고, '사진'일 때만 블러 슬라이더/파일 업로드를 보임
+// 정렬 순서 숫자 입력칸은 숨기고, 목록을 끌어서 순서를 정합니다
+document.querySelectorAll('input[id$="-order"]').forEach(i=>{ const f = i.closest('.field'); if(f) f.hidden = true; });
+function updateColorRows(){
+  const pgColor = document.getElementById('pg-category').value === 'color';
+  const sbColor = document.getElementById('sb-category').value === 'color';
+  document.getElementById('pg-color-row').hidden = !pgColor;
+  document.getElementById('pg-upload-row').hidden = pgColor;
+  document.getElementById('pg-effect-row').hidden = pgColor;
+  document.getElementById('sb-color-row').hidden = !sbColor;
+  document.getElementById('sb-upload-row').hidden = sbColor;
+  syncColorPicker('pg-value','pg-color'); syncColorPicker('sb-value','sb-color'); syncColorPicker('th-value','th-color');
+}
+document.getElementById('pg-category').addEventListener('change', updateColorRows);
+document.getElementById('sb-category').addEventListener('change', updateColorRows);
+function updateRangeLabels(){
+  document.getElementById('pg-blur-val').textContent = document.getElementById('pg-blur').value;
+  document.getElementById('pg-opacity-val').textContent = document.getElementById('pg-opacity').value;
+}
+document.getElementById('pg-blur').addEventListener('input', updateRangeLabels);
+document.getElementById('pg-opacity').addEventListener('input', updateRangeLabels);
+updateColorRows(); updateRangeLabels();
+
+// ══════════════════════════════════════
+//  텍스트(라벨) — 메인 페이지 고정 문구 전체 (기본값은 dominverse.html 과 동일해야 함)
+// ══════════════════════════════════════
+const TEXT_KEYS = [
+  {g:'상단바 · 프로필 칼럼', k:'brand_title', l:'사이트 이름 (상단바 + 프로필 칼럼)', d:'박도현 × 유민'},
+  {g:'상단바 · 프로필 칼럼', k:'top_today', l:'상단바: 오늘 방문', d:'TODAY'},
+  {g:'상단바 · 프로필 칼럼', k:'top_total', l:'상단바: 전체 방문', d:'TOTAL'},
+  {g:'상단바 · 프로필 칼럼', k:'site_url', l:'상단바: 주소 표기', d:'dominverse.kr'},
+  {g:'상단바 · 프로필 칼럼', k:'owner_tag', l:'프로필 칼럼: 영문 이름', d:'DOHYUNYUMIN'},
+  {g:'상단바 · 프로필 칼럼', k:'copyright', l:'프로필 칼럼: 저작권 문구', d:'© 2026 DOHYUNYUMIN'},
+  {g:'상단바 · 프로필 칼럼', k:'doc_title', l:'브라우저 탭 제목', d:'DOHYUNYUMIN'},
+  {g:'메뉴 이름 (오른쪽 탭 · 칩 · 모바일 탭바 · 갤러리 탭)', k:'nav_home', l:'홈 (오른쪽 탭)', d:'홈'},
+  {g:'메뉴 이름 (오른쪽 탭 · 칩 · 모바일 탭바 · 갤러리 탭)', k:'nav_novel', l:'소설 (탭 · 칩 · 모바일)', d:'소설'},
+  {g:'메뉴 이름 (오른쪽 탭 · 칩 · 모바일 탭바 · 갤러리 탭)', k:'nav_doodle', l:'낙서 (탭 · 칩)', d:'낙서'},
+  {g:'메뉴 이름 (오른쪽 탭 · 칩 · 모바일 탭바 · 갤러리 탭)', k:'nav_commission', l:'커미션 (탭 · 칩 · 갤러리 탭)', d:'커미션'},
+  {g:'메뉴 이름 (오른쪽 탭 · 칩 · 모바일 탭바 · 갤러리 탭)', k:'nav_profile', l:'프로필 (칩 · 모바일)', d:'프로필'},
+  {g:'메뉴 이름 (오른쪽 탭 · 칩 · 모바일 탭바 · 갤러리 탭)', k:'nav_home_m', l:'모바일 탭바: 메인화면', d:'메인화면'},
+  {g:'메뉴 이름 (오른쪽 탭 · 칩 · 모바일 탭바 · 갤러리 탭)', k:'nav_gallery_m', l:'모바일 탭바: 그림갤러리', d:'그림갤러리'},
+  {g:'메뉴 이름 (오른쪽 탭 · 칩 · 모바일 탭바 · 갤러리 탭)', k:'gal_tab_art', l:'갤러리 탭: 그림', d:'그림'},
+  {g:'메인 화면 문구', k:'menu_label', l:'메뉴 위 작은 글씨', d:'menu'},
+  {g:'메인 화면 문구', k:'today_label', l:'하단 날짜 앞 글자', d:'Today'},
+  {g:'메인 화면 문구', k:'thumb_placeholder', l:'메뉴 썸네일 빈 칸 글자', d:'img'},
+  {g:'메인 화면 문구', k:'main_placeholder', l:'메인 영역 빈 칸 안내 문구 (기본: 비어 있음 · 스티커 영역 배경이 있으면 자동으로 숨김)', d:''},
+  {g:'오른쪽 패널 · 기타', k:'side_write', l:'글쓰기 버튼', d:'✏ 글쓰기'},
+  {g:'오른쪽 패널 · 기타', k:'side_write_url', l:'글쓰기 버튼 이동 주소(관리자 페이지 주소)', d:'dominverse-admin.html'},
+  {g:'오른쪽 패널 · 기타', k:'bgm_empty', l:'BGM이 없을 때', d:'등록된 곡이 없습니다'},
+  {g:'오른쪽 패널 · 기타', k:'anniv_suffix', l:'기념일 일수 뒤 글자 (예: 123일째)', d:'일째'},
+  {g:'오른쪽 패널 · 기타', k:'profile_empty', l:'프로필이 없을 때 안내', d:'관리자에서 프로필을 등록하면 이곳에 표시됩니다.'},
+  {g:'오른쪽 패널 · 기타', k:'novel_empty', l:'소설 회차가 없을 때', d:'등록된 회차가 없습니다'}
+];
+const TEXT_LEGACY = { label_novel:'nav_novel', label_doodle:'nav_doodle', label_commission:'nav_commission', label_profile:'nav_profile' };
+let TEXT_ROWS = {};
+(function buildTextGrid(){
+  const grid = document.getElementById('tx-grid');
+  let html = '', lastG = '';
+  TEXT_KEYS.forEach(o=>{
+    if(o.g !== lastG){ html += `<div class="text-group">${escapeHtml(o.g)}</div>`; lastG = o.g; }
+    html += `<div class="field"><label>${escapeHtml(o.l)}<small>기본: ${escapeHtml(o.d)}</small></label><input id="tx-${o.k}" placeholder="${escapeHtml(o.d)}"></div>`;
+  });
+  grid.innerHTML = html;
+})();
+async function loadTextForm(){
+  const st = document.getElementById('tx-status');
+  try{
+    const [rows, theme] = await Promise.all([dbSelect('site_text'), dbSelect('site_theme').catch(()=>[])]);
+    TEXT_ROWS = {};
+    rows.forEach(r=>{ if(r.category) TEXT_ROWS[r.category] = r; });
+    TEXT_KEYS.forEach(o=>setval('tx-'+o.k, ''));
+    // 예전 '테마 설정 > 칩 글자' 값이 있으면 초기값으로 불러옴 (저장하면 이 메뉴로 이전됨)
+    theme.forEach(it=>{ const k = TEXT_LEGACY[it.category]; if(k && it.image_url && !TEXT_ROWS[k]) setval('tx-'+k, it.image_url); });
+    rows.forEach(r=>{ if(r.category && document.getElementById('tx-'+r.category)) setval('tx-'+r.category, r.title); });
+  }catch(e){ st.textContent = '불러오기 실패: ' + e.message; }
+}
+async function saveTextForm(){
+  const st = document.getElementById('tx-status');
+  st.textContent = '저장 중…';
+  try{
+    for(const o of TEXT_KEYS){
+      const v = document.getElementById('tx-'+o.k).value.trim();
+      const row = TEXT_ROWS[o.k];
+      if(row){
+        if(v === '') await dbDelete(row.id);
+        else if(v !== row.title) await dbUpdate(row.id, { section:'site_text', category:o.k, title:v });
+      } else if(v !== ''){
+        await dbInsert({ section:'site_text', category:o.k, title:v, sort_order:0 });
+      }
+    }
+    st.textContent = '저장되었습니다.';
+    await loadTextForm();
+  }catch(e){ st.textContent = '오류: ' + e.message; }
+}
+document.getElementById('tx-save').addEventListener('click', saveTextForm);
+document.getElementById('tx-clear').addEventListener('click', ()=>{
+  TEXT_KEYS.forEach(o=>setval('tx-'+o.k, ''));
+  document.getElementById('tx-status').textContent = '모든 칸을 비웠습니다. "전체 저장"을 눌러야 기본 문구로 돌아갑니다.';
+});
+
+// 스티커 위치 미리보기 배경: 등록된 '스티커 영역 배경'을 그대로 보여줌
+function applyStickerBgPreview(items){
+  const el = document.getElementById('skPreview');
+  const it = items && items[0];
+  if(!it || !it.image_url){ el.style.removeProperty('--sb-bg'); return; }
+  if(it.category === 'color'){
+    el.style.setProperty('--sb-bg', `linear-gradient(${it.image_url}, ${it.image_url})`);
+  } else {
+    el.style.setProperty('--sb-bg', `url('${it.image_url.replace(/'/g,"\\'")}')`);
+  }
+}
+
+function initAll(){
+  Object.keys(SECTIONS).forEach(loadSection);
+  loadTextForm();
+}
+
+// ══════════════════════════════════════
+//  저장된 로그인 확인 — 반드시 스크립트 맨 아래 (모든 선언 이후)
+// ══════════════════════════════════════
+if(localStorage.getItem(AUTH_KEY) === 'yes'){
+  showApp();
+} else {
+  document.getElementById('pw-input').focus();
+}
+</script>
+</body>
+</html>

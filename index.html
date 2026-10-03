@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOHYUNYUMIN</title>
+<script>
+/* 새로고침 시 기본 화면(기본 색·문구·폰트)이 잠깐 보이는 것을 막기 위해,
+   관리자 설정이 적용될 때까지 화면을 숨겼다가 부드럽게 보여줍니다. (최대 2.5초 후에는 무조건 표시) */
+document.documentElement.classList.add('dv-boot');
+window.dvReveal = function(){ document.documentElement.classList.remove('dv-boot'); };
+setTimeout(window.dvReveal, 2500);
+/* 로딩 화면: 관리자에서 등록한 로고/문구(이전 방문 때 저장해 둔 값)가 있으면 표시, 없으면 스피너 */
+(function(){
+  var d = document.createElement('div'); d.id = 'dvLoader';
+  var c = null;
+  try{ c = JSON.parse(localStorage.getItem('dv_loading') || 'null'); }catch(e){}
+  if(c && (c.img || c.text)){
+    if(c.img){ var im = document.createElement('img'); im.src = c.img; im.alt = ''; d.appendChild(im); }
+    if(c.text){ var t = document.createElement('div'); t.textContent = c.text; d.appendChild(t); }
+  } else {
+    var sp = document.createElement('div'); sp.className = 'dv-spin'; d.appendChild(sp);
+  }
+  document.documentElement.appendChild(d);
+})();
+</script>
+<style>
+html.dv-boot body{ opacity:0; }
+#dvLoader{
+  position:fixed; inset:0; z-index:9999; display:none;
+  grid-template-rows:1fr auto 1fr; justify-items:center;
+  background:#fff; color:#2b2b31; font-family:'SUITE', system-ui, sans-serif; font-weight:700; font-size:14px; text-align:center; padding:24px;
+}
+#dvLoader > *{ grid-row:2; align-self:center; }
+#dvLoader > img + div{ grid-row:3; align-self:start; margin-top:14px; }   /* 이미지가 있으면 이미지를 정중앙에, 문구는 그 아래 */
+html.dv-boot #dvLoader{ display:grid; }
+#dvLoader img{ width:auto; height:auto; max-width:min(240px, 70vw); max-height:200px; object-fit:contain; animation:dvPulse 1.4s ease-in-out infinite; }
+#dvLoader .dv-spin{
+  width:26px; height:26px; border:3px solid rgba(123,28,255,.18); border-top-color:#7B1CFF; border-radius:50%;
+  animation:dvSpin .8s linear infinite;
+}
+@keyframes dvPulse{ 0%,100%{ opacity:1; } 50%{ opacity:.55; } }
+@keyframes dvSpin{ to{ transform:rotate(360deg); } }
+body{ transition:opacity .3s ease; }
+
+@font-face{
+  font-family:'SUITE';
+  src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Regular.woff2') format('woff2');
+  font-weight:400; font-display:swap;
+}
+@font-face{
+  font-family:'SUITE';
+  src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Medium.woff2') format('woff2');
+  font-weight:500; font-display:swap;
+}
+@font-face{
+  font-family:'SUITE';
+  src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Bold.woff2') format('woff2');
+  font-weight:700; font-display:swap;
+}
+:root{
+  --accent:#7B1CFF;
+  --accent-dim:#f1e8ff;
+  --paper:#ffffff;
+  --paper-dim:#f1f2f4;
+  --ink:#2b2b31;
+  --ink-soft:#86868f;
+  --line:#d5d6dc;
+  --tag-novel:#e0a233;
+  --tag-gallery:#3fae8f;
+  --tag-profile:#4f9fd6;
+  --book-cover:#ddd0f7;
+  --book-cover-border:#b39cec;
+  --book-border:#c7c9d1;
+  --tag-a-bg:#fdf3c4;
+  --tag-b-bg:#e6dbfa;
+  --tag-c-bg:#cdeaf9;
+  --tag-d-bg:#fbdbe9;
+  --font-main:'SUITE',sans-serif;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+button,input,select,textarea{ font-family:inherit; }
+html{height:100%}
+body{
+  font-family:var(--font-main);
+  color:var(--ink);
+  min-height:100vh;
+  position:relative;
+  padding:36px 12px;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+}
+
+/* ───────── 바깥(페이지 전체) 배경 ───────── */
+.page-bg{
+  position:fixed; inset:0; z-index:0;
+  background:#efe7da;
+  background-size:cover; background-position:center;
+}
+.page-bg.mode-image{
+  /* 블러 강도·불투명도는 관리자 > 바깥 배경에서 조절 (기본 50px / 55%) */
+  inset:calc(var(--bg-blur, 50px) * -0.8);
+  filter:blur(var(--bg-blur, 50px));
+  opacity:var(--bg-opacity, .55);
+  transform:scale(1.1);
+}
+.page-bg.mode-color{ filter:none; opacity:1; transform:none; }
+
+/* ───────── 사이트 카드 (최대 800 컨테이너, 메인 영역은 항상 가운데) ───────── */
+.site-row{
+  display:flex; flex-direction:column; align-items:stretch; gap:22px;
+  width:800px; max-width:100%; min-width:0;
+  margin:auto;   /* 가로·세로 정중앙 (화면이 카드보다 작으면 안전하게 스크롤) */
+  position:relative; z-index:1;
+}
+.book-wrap{ width:100%; height:600px; min-width:0; position:relative; }   /* 카드 크기: 가로 최대 800 × 세로 600 */
+.book-wrap::before{
+  content:'';
+  position:absolute; top:10px; left:10px; right:-10px; bottom:-10px;
+  background:var(--paper); border-radius:24px;
+  box-shadow:0 20px 50px -25px rgba(30,20,10,.4);
+  z-index:0;
+}
+.index-tabs{
+  position:absolute; top:70px; left:calc(100% + 6px); z-index:5;
+  display:flex; flex-direction:column; gap:8px;
+}
+.index-tab{
+  border:none; cursor:pointer; white-space:nowrap;
+  width:72px; padding:10px 6px; border-radius:0 8px 8px 0; text-align:center;
+  overflow:hidden; text-overflow:ellipsis;
+  font-size:12px; font-weight:700;
+  background:var(--accent); color:#fff;
+  box-shadow:2px 3px 8px -2px rgba(0,0,0,.25);
+}
+/* 메뉴(탭)별 색상 — 관리자 > 테마 설정 */
+.index-tab[data-k="home"]{ background:var(--tab-home-bg, var(--accent)); color:var(--tab-home-text, #fff); }
+.index-tab[data-k="profile"]{ background:var(--tab-profile-bg, var(--accent)); color:var(--tab-profile-text, #fff); }
+.index-tab[data-k="novel"]{ background:var(--tab-novel-bg, var(--accent)); color:var(--tab-novel-text, #fff); }
+.index-tab[data-k="commission"]{ background:var(--tab-commission-bg, var(--accent)); color:var(--tab-commission-text, #fff); }
+.index-tab.active, .index-tab.active[data-k]{ background:var(--tab-active-bg, #fff); color:var(--tab-active-text, var(--ink)); border:1px solid var(--line); border-left:none; }
+.book-cover{
+  position:relative; z-index:1;
+  background:var(--paper);
+  box-shadow:0 30px 70px -30px rgba(30,20,10,.45);
+  border-radius:20px;
+  height:100%; display:flex; flex-direction:column;
+}
+.book-content{ position:relative; z-index:1; padding:12px; flex:1; min-height:0; display:flex; flex-direction:column; }
+.top-bar{
+  display:flex; align-items:baseline; justify-content:space-between;
+  padding:10px 18px; margin-bottom:12px; flex-shrink:0;
+  font-size:11.5px; color:var(--ink-soft);
+}
+.top-bar b{ color:var(--ink); font-weight:700; }
+.top-bar .brand-title{ font-size:17px; font-weight:700; color:var(--accent); }
+
+.book-pages{
+  display:flex; align-items:stretch; position:relative;
+  flex:1; min-height:0;
+}
+.profile-col{
+  width:200px; flex-shrink:0;
+  background:var(--paper);
+  border-radius:16px;
+  box-shadow:0 4px 16px -8px rgba(0,0,0,.18), 0 0 0 1.5px var(--book-border);
+  padding:22px 16px;
+  display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px;
+  position:relative; z-index:1;
+}
+.book-rings{
+  width:20px;
+  display:flex; flex-direction:column; justify-content:space-between;
+  padding:34px 0;
+  position:absolute; top:0; bottom:0; left:200px; transform:translateX(-50%);
+  z-index:2;
+  pointer-events:none;
+}
+.book-rings span{
+  width:14px; height:9px; border-radius:5px;
+  background:var(--paper-dim);
+  box-shadow:inset 0 0 0 1px var(--book-border), 0 1px 2px rgba(0,0,0,.15);
+}
+.center-col{
+  flex:1; min-width:0;
+  background:var(--paper);
+  border-radius:16px;
+  box-shadow:0 4px 16px -8px rgba(0,0,0,.18), 0 0 0 1.5px var(--book-border);
+  padding:22px 20px;
+  position:relative; z-index:1;
+  display:flex; flex-direction:column; min-height:0; overflow:hidden;
+}
+.avatar-box{
+  width:150px; height:150px; border-radius:50%;
+  background:var(--paper-dim); border:1px solid var(--line);
+  overflow:hidden;
+}
+.avatar-box img{ width:100%; height:100%; object-fit:cover; display:block; }
+.site-title{ font-size:15px; font-weight:700; margin-top:4px; }
+.owner-tag{ font-size:11.5px; color:var(--ink-soft); }
+.profile-divider{ width:70%; border-top:1px dashed var(--line); margin:6px 0; }
+.profile-links{ font-size:11px; color:var(--ink-soft); }
+
+/* ───────── 가운데: 게시판 + 메인 이미지 / 탭 콘텐츠 ───────── */
+.content-section{ display:none; }
+.content-section.active{ display:block; flex:1; min-height:0; overflow-y:auto; }
+/* 메인화면 탭: 남는 세로 공간을 이미지(스티커) 영역이 채움 */
+.content-section[data-content="main"].active{ display:flex; flex-direction:column; overflow-y:auto; }   /* 좁은 화면에서 내용이 넘치면 카드 안에서 스크롤 */
+.content-section[data-content="main"] > *{ flex-shrink:0; }
+.content-section[data-content="main"] > .main-image-frame{ flex:1 1 auto; min-height:200px; }
+
+.menu-label{
+  font-size:12px; color:var(--ink-soft); margin-bottom:6px;
+}
+.content-top{
+  display:flex; gap:14px; margin-bottom:16px;
+  padding-bottom:16px; border-bottom:1px dashed var(--line);
+}
+.content-thumb{
+  width:110px; height:110px; aspect-ratio:1/1; flex-shrink:0;
+  border:1px solid var(--line); border-radius:10px;
+  background:var(--paper-dim);
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+}
+.content-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+.content-thumb .thumb-placeholder{ font-size:11px; color:var(--ink-soft); }
+
+.chip-menu{
+  flex:1; min-width:0;
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:8px 14px; align-content:start;
+}
+.chip-item{
+  display:flex; align-items:center; gap:8px;
+  border:none; background:none; cursor:pointer;
+  padding:2px 0;
+}
+.chip-label{
+  font-size:12px; font-weight:700; color:var(--ink);
+  padding:4px 12px; border-radius:20px;
+}
+.chip-item.active .chip-label{ box-shadow:inset 0 0 0 2px var(--ink); }
+.chip-count{ font-size:12px; font-weight:700; color:var(--ink-soft); }
+.tag-a{ background:var(--tag-a-bg); color:var(--tag-a-text, var(--ink)); }
+.tag-b{ background:var(--tag-b-bg); color:var(--tag-b-text, var(--ink)); }
+.tag-c{ background:var(--tag-c-bg); color:var(--tag-c-text, var(--ink)); }
+.tag-d{ background:var(--tag-d-bg); color:var(--tag-d-text, var(--ink)); }
+
+.main-image-frame{
+  position:relative;
+  border:1px solid var(--line); border-radius:12px; overflow:hidden;
+  background:var(--paper-dim);
+  min-height:260px;
+}
+.main-image-frame img{ width:100%; display:block; }
+.main-image-frame .placeholder{
+  display:flex; align-items:center; justify-content:center;
+  height:260px; color:var(--ink-soft); font-size:12px;
+}
+
+.today-date{ margin-top:12px; font-size:12px; color:var(--ink-soft); }
+
+.sticker-layer{ position:absolute; inset:0; z-index:5; pointer-events:none; overflow:hidden; }
+.sticker-item{ position:absolute; }
+.sticker-item img{
+  display:block; width:100%; height:auto;
+  pointer-events:auto; cursor:grab; user-select:none; -webkit-user-drag:none;
+  filter:drop-shadow(0 6px 10px rgba(0,0,0,.3));
+}
+.sticker-item img:active{ cursor:grabbing; }
+.sticker-item .resize-handle{
+  position:absolute; right:-7px; bottom:-7px; width:14px; height:14px; border-radius:50%;
+  background:var(--accent); border:2px solid #fff; cursor:nwse-resize;
+  opacity:0; transition:opacity .15s ease; pointer-events:auto;
+}
+.sticker-item:hover .resize-handle{ opacity:1; }
+
+/* 프로필 탭 */
+.pill-tabs{ display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+.pill-tab{
+  border:1px solid var(--line); background:#fff; border-radius:20px;
+  padding:6px 14px; font-size:12px; cursor:pointer; color:var(--ink-soft);
+}
+.pill-tab.active{ background:var(--accent); color:#fff; border-color:var(--accent); }
+#profileCards{ display:flex; flex-direction:column; gap:12px; }
+.profile-card{ display:flex; gap:16px; border:1px solid var(--line); border-radius:12px; padding:16px; background:#fffefb; }
+.profile-card .photo{ width:110px; height:110px; border-radius:10px; background:var(--paper-dim); flex-shrink:0; }
+.profile-stats{ margin-top:10px; font-size:12px; color:var(--ink-soft); display:grid; gap:4px; }
+
+/* 소설 탭 */
+.novel-layout{ display:flex; gap:16px; border:1px solid var(--line); border-radius:12px; padding:16px; background:#fffefb; }
+.ep-list{ width:150px; flex-shrink:0; border-right:1px solid var(--line); padding-right:12px; }
+.ep-item{ padding:8px 6px; border-radius:6px; font-size:12px; cursor:pointer; color:var(--ink-soft); }
+.ep-item.active{ background:var(--paper-dim); color:var(--ink); font-weight:700; }
+.ep-reader{ flex:1; font-size:12.5px; line-height:1.9; color:var(--ink); }
+.ep-reader h3{ font-size:14px; margin-bottom:8px; }
+
+/* 그림갤러리 탭 */
+.gallery-tabs{ display:flex; gap:6px; margin-bottom:14px; }
+.gallery-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.gallery-grid div{ aspect-ratio:3/4; border-radius:8px; background:var(--paper-dim); position:relative; overflow:hidden; }
+.gallery-grid div[data-title]::after{
+  content:attr(data-title); position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  padding:8px; text-align:center; color:#fff; font-size:12px; font-weight:700; line-height:1.35; word-break:keep-all;
+  background:rgba(0,0,0,.5); opacity:0; transition:opacity .18s ease; pointer-events:none;
+}
+.gallery-grid div[data-title]:hover::after{ opacity:1; }
+.gallery-grid div[data-url]{ cursor:zoom-in; transition:transform .15s ease, box-shadow .15s ease; }
+.gallery-grid div[data-url]:hover{ transform:translateY(-2px); box-shadow:0 6px 16px -8px rgba(0,0,0,.35); }
+
+/* 갤러리 원본 이미지 팝업 */
+.lightbox{
+  position:fixed; inset:0; z-index:200; background:rgba(15,10,25,.6);
+  display:flex; align-items:center; justify-content:center; padding:24px;
+}
+.lightbox[hidden]{ display:none; }
+.lb-box{ position:relative; display:inline-block; line-height:0; max-width:100%; max-height:100%; }
+.lb-box img{
+  display:block; max-width:min(92vw, 1400px); max-height:calc(100vh - 96px);
+  width:auto; height:auto; object-fit:contain; background:#fff;
+  border-radius:8px; box-shadow:0 20px 60px rgba(0,0,0,.45);
+}
+.lb-close{
+  position:absolute; top:-14px; right:-14px; z-index:1; width:32px; height:32px; border-radius:50%;
+  border:none; background:#fff; color:#111; font-size:22px; line-height:1; cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; padding:0 0 2px;
+}
+.lb-close:hover{ background:#f0f0f0; }
+.lb-nav{
+  position:absolute; top:50%; z-index:1; width:38px; height:38px; margin-top:-19px; border-radius:50%;
+  border:none; background:rgba(0,0,0,.5); color:#fff; font-size:22px; line-height:1; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; padding:0 0 3px; line-height:1;
+}
+.lb-nav:hover{ background:rgba(0,0,0,.7); }
+.lb-nav[hidden]{ display:none; }
+.lb-prev{ left:10px; }
+.lb-next{ right:10px; }
+.lb-count{
+  position:absolute; left:50%; bottom:10px; transform:translateX(-50%); z-index:1;
+  padding:3px 10px; border-radius:20px; background:rgba(0,0,0,.5); color:#fff; font-size:12px; font-weight:700; line-height:1.4;
+}
+.lb-count[hidden]{ display:none; }
+.multi-badge{
+  position:absolute; top:6px; right:6px; padding:1px 7px; border-radius:20px;
+  background:rgba(0,0,0,.5); color:#fff; font-size:11px; font-weight:700; line-height:1.5; pointer-events:none;
+}
+
+/* ───────── 오른쪽: 사이드 패널 (기념일/BGM 전용) ─────────
+   넓은 화면(1340px~): 메인 영역 바깥 오른쪽에 띄워서 메인이 중앙에 유지되도록 함
+   그보다 좁으면 아래 미디어쿼리에서 메인 위쪽 가로 띠로 전환 */
+.side-col{
+  position:absolute; top:0; left:calc(100% + 96px); width:170px;
+  display:flex; flex-direction:column; gap:14px;
+}
+.side-panel{ border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#fffefb; }
+.side-panel-header{
+  background:var(--accent); color:#fff; font-size:12px; font-weight:700;
+  text-align:center; padding:8px;
+}
+
+.bgm-widget{ padding:12px; display:flex; flex-direction:column; gap:0; color:var(--accent); background:var(--side-bgm-bg, transparent); }
+/* 커버 이미지 (등록 시에만 표시) */
+.bgm-cover{ width:100%; aspect-ratio:1/1; border:none; border-radius:14px; overflow:hidden; margin-bottom:10px; background:var(--accent-dim); }
+.bgm-cover[hidden]{ display:none; }
+.bgm-cover img{ width:100%; height:100%; object-fit:cover; display:block; }
+.bgm-title{ font-size:14px; font-weight:800; color:var(--accent); line-height:1.25; white-space:nowrap; overflow:hidden; }
+.bgm-title .in{ display:inline-block; will-change:transform; }
+/* 곡 제목이 칸보다 길면 좌우로 천천히 흐름 */
+.bgm-title.marquee .in{ animation:bgmMarquee var(--mq-dur, 8s) ease-in-out infinite alternate; }
+@keyframes bgmMarquee{ 0%,12%{ transform:translateX(0); } 88%,100%{ transform:translateX(var(--mq-shift, 0px)); } }
+@media (prefers-reduced-motion:reduce){ .bgm-title.marquee .in{ animation:none; } .bgm-title{ text-overflow:ellipsis; } }
+.bgm-artist{ font-size:11px; color:var(--accent); margin-top:1px; min-height:14px; }
+/* 재생바·볼륨바 공통: 가는 선 + 동그란 점 (전부 테마색) */
+.bgm-seek{
+  -webkit-appearance:none; appearance:none; width:100%; height:14px; margin:8px 0 6px;
+  background:transparent; cursor:pointer; display:block;
+}
+.bgm-seek::-webkit-slider-runnable-track{ height:2px; background:var(--accent); border-radius:2px; }
+.bgm-seek::-moz-range-track{ height:2px; background:var(--accent); border-radius:2px; }
+.bgm-seek::-webkit-slider-thumb{ -webkit-appearance:none; width:12px; height:12px; margin-top:-5px; border-radius:50%; background:var(--accent); border:none; }
+.bgm-seek::-moz-range-thumb{ width:12px; height:12px; border-radius:50%; background:var(--accent); border:none; }
+.bgm-controls{ display:flex; align-items:center; justify-content:space-between; gap:2px; margin-top:2px; }
+.bgm-controls button{
+  position:relative; width:9px; height:9px; padding:0; border:none; background:transparent; color:var(--accent);
+  cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+}
+.bgm-controls button::after{ content:''; position:absolute; inset:-8px; }   /* 눌러야 하는 영역은 넉넉하게 */
+.bgm-controls button svg{ width:9px; height:9px; display:block; }
+.bgm-controls button.off{ opacity:.35; }
+.bgm-controls button#bgmPlayBtn{ width:17px; height:17px; border-radius:50%; background:var(--accent); color:#fff; }
+.bgm-controls button#bgmPlayBtn svg{ width:7px; height:7px; }
+.bgm-controls button#bgmPlayBtn::before{
+  content:''; position:absolute; inset:0; border-radius:50%; border:2px solid var(--accent);
+  opacity:0; pointer-events:none;
+}
+.bgm-controls button#bgmPlayBtn.playing::before{ animation:bgmRing 1.6s ease-out infinite; }
+@keyframes bgmRing{ 0%{ transform:scale(1); opacity:.7; } 100%{ transform:scale(2.1); opacity:0; } }
+@media (prefers-reduced-motion:reduce){ .bgm-controls button#bgmPlayBtn.playing::before{ animation:none; } }
+.bgm-controls button#bgmPlayBtn .ic-pause{ display:none; }
+.bgm-controls button#bgmPlayBtn.playing .ic-pause{ display:block; }
+.bgm-controls button#bgmPlayBtn.playing .ic-play{ display:none; }
+
+.anniversary-widget{ padding:12px; text-align:center; border-top:1px dashed var(--line); background:var(--side-anniv-bg, transparent); }
+.anniversary-label{ font-size:11px; color:var(--ink-soft); }
+.anniversary-days{ font-size:20px; font-weight:700; color:var(--accent); margin-top:2px; }
+.write-btn[hidden]{ display:none !important; }
+.write-btn{
+  display:inline-block; margin-top:8px;
+  font-size:11px; font-weight:700; color:#fff;
+  background:var(--accent); padding:6px 14px; border-radius:20px;
+  text-decoration:none; border:none; cursor:pointer;
+}
+
+/* ───────── 사이드 패널을 위쪽 띠로 전환 (1340px 미만) ───────── */
+@media (max-width:1339px){
+  .side-col{ position:absolute; bottom:100%; top:auto; left:0; width:100%; margin-bottom:22px; }
+  body{ padding-top:84px; padding-bottom:84px; }   /* 카드 위 띠가 들어갈 여백을 위아래 똑같이 확보 → 카드는 계속 정중앙 */
+  .side-panel{ display:flex; align-items:center; flex-wrap:nowrap; }
+  .side-panel-header{ flex:0 0 auto; writing-mode:horizontal-tb; padding:8px 12px; white-space:nowrap; }
+  .bgm-widget{
+    flex:1; min-width:0; flex-direction:row; align-items:center; gap:8px;
+    padding:6px 12px; border-right:1px dashed var(--line);
+  }
+  .bgm-title{ max-width:260px; }
+  .bgm-artist{ display:none; }
+  .bgm-seek{ display:none; }
+  .bgm-controls{ margin:0 0 0 auto; flex:0 0 auto; gap:14px; }
+  .bgm-controls .bgm-extra{ display:none; }
+  .bgm-cover{ display:none; }
+  .anniversary-widget{
+    flex:0 0 auto; border-top:none; padding:6px 12px;
+    display:flex; flex-direction:row; align-items:baseline; gap:6px; white-space:nowrap;
+  }
+  .anniversary-days{ margin-top:0; font-size:14px; }
+  .anniversary-widget .write-btn{ margin-top:0; margin-left:4px; }
+}
+
+/* ───────── 오른쪽 탭(약 78px)이 튀어나온 만큼 왼쪽으로 보정 → 탭 포함 시각적 정중앙 ───────── */
+@media (min-width:901px){
+  .site-row{ left:-39px; }
+}
+
+/* ───────── 중간 너비 (책 폭이 좁아질 때) ───────── */
+@media (max-width:900px){
+  .index-tabs{ display:none; }
+  .content-top{ flex-direction:column; }
+  .content-thumb{ width:140px; height:140px; align-self:flex-start; }
+  .chip-menu{ grid-template-columns:repeat(2,1fr); }
+}
+
+/* ───────── 모바일 ───────── */
+.mobile-tabbar{ display:none; }
+@media (max-width:400px){
+  body{ padding:36px 12px 60px; }
+  .site-row{ flex-direction:column; padding-top:52px; }
+  .side-col{ position:static; width:100%; margin-bottom:0; order:-1; }
+  .book-wrap{ height:auto; }
+  .book-pages{ flex-direction:column; gap:0; }
+  .book-rings{ display:none; }
+  .profile-col{ display:none; }
+  .center-col{ border-radius:14px; box-shadow:none; }
+  .chip-menu{ display:none; }
+  .book-wrap::before{ display:none; }
+  .book-cover{ border-radius:0; }
+  .bgm-widget{ flex:0 0 auto; padding:6px 12px; }
+  .bgm-title, .bgm-controls #bgmPrev, .bgm-controls #bgmNext{ display:none; }
+  .bgm-controls{ margin:0; }
+  .anniversary-widget{ border-top:none; }
+  .mobile-tabbar{
+    display:flex; position:fixed; top:0; left:0; right:0; z-index:20;
+    background:#ffffff; box-shadow:0 1px 0 var(--line);
+    padding:0 4px; gap:2px; overflow-x:auto;
+  }
+  .mobile-tabbar button{
+    flex:1; white-space:nowrap; border:none;
+    background:none; color:var(--ink-soft);
+    font-family:inherit; font-weight:600; font-size:12px;
+    padding:13px 6px 10px;
+    border-bottom:3px solid transparent;
+  }
+  .mobile-tabbar button[data-open="main"]{ background:var(--mtab-main-bg, none); color:var(--mtab-main-text, var(--ink-soft)); }
+  .mobile-tabbar button[data-open="profile"]{ background:var(--mtab-profile-bg, none); color:var(--mtab-profile-text, var(--ink-soft)); }
+  .mobile-tabbar button[data-open="novel"]{ background:var(--mtab-novel-bg, none); color:var(--mtab-novel-text, var(--ink-soft)); }
+  .mobile-tabbar button[data-open="gallery"]{ background:var(--mtab-gallery-bg, none); color:var(--mtab-gallery-text, var(--ink-soft)); }
+  .mobile-tabbar button.active{ font-weight:800; border-bottom-color:var(--accent); }
+  .mobile-tabbar button.active[data-open="main"]{ color:var(--mtab-main-text, var(--ink)); }
+  .mobile-tabbar button.active[data-open="profile"]{ color:var(--mtab-profile-text, var(--ink)); }
+  .mobile-tabbar button.active[data-open="novel"]{ color:var(--mtab-novel-text, var(--ink)); }
+  .mobile-tabbar button.active[data-open="gallery"]{ color:var(--mtab-gallery-text, var(--ink)); }
+}
+</style>
+</head>
+<body>
+
+<div class="page-bg" id="pageBg"></div>
+
+<!-- 모바일 고정 탭바 -->
+<div class="mobile-tabbar">
+  <button data-open="main" class="active" data-t="nav_home_m">메인화면</button>
+  <button data-open="profile" data-t="nav_profile">프로필</button>
+  <button data-open="novel" data-t="nav_novel">소설</button>
+  <button data-open="gallery" data-t="nav_gallery_m">그림갤러리</button>
+</div>
+
+<div class="site-row">
+  <div class="book-wrap">
+    <div class="index-tabs">
+      <button data-k="home" class="index-tab active" data-open="main" data-t="nav_home">홈</button>
+      <button data-k="profile" class="index-tab" data-open="profile" data-t="nav_profile">프로필</button>
+      <button data-k="commission" class="index-tab" data-open="gallery" data-cat="커미션" data-t="nav_commission">커미션</button>
+      <button data-k="novel" class="index-tab" data-open="novel" data-t="nav_novel">소설</button>
+    </div>
+    <div class="book-cover">
+      <div class="book-content">
+
+      <div class="top-bar">
+        <span><span data-t="top_today">TODAY</span> <b id="todayCount">1</b> &nbsp;|&nbsp; <span data-t="top_total">TOTAL</span> <b id="totalCount">1</b></span>
+        <span class="brand-title" id="dominTitle" data-t="brand_title">박도현 × 유민</span>
+        <span id="dominUrl" data-t="site_url">dominverse.kr</span>
+      </div>
+
+      <div class="book-pages">
+
+        <!-- 왼쪽 페이지: 프로필 -->
+        <div class="profile-col">
+          <div class="avatar-box"><img id="avatarImg" alt="" style="display:none"></div>
+          <div class="site-title" data-t="brand_title">박도현 × 유민</div>
+          <div class="owner-tag" data-t="owner_tag">DOHYUNYUMIN</div>
+          <div class="profile-divider"></div>
+          <div class="profile-links" data-t="copyright">© 2026 DOHYUNYUMIN</div>
+        </div>
+
+        <!-- 링 바인더 -->
+        <div class="book-rings"><span></span><span></span><span></span><span></span><span></span></div>
+
+        <!-- 오른쪽 페이지: 콘텐츠 -->
+        <div class="center-col">
+
+        <div class="content-section active" data-content="main">
+          <div class="menu-label" data-t="menu_label">menu</div>
+          <div class="content-top">
+            <div class="content-thumb" id="contentThumb"><span class="thumb-placeholder" data-t="thumb_placeholder">img</span></div>
+            <div class="chip-menu">
+              <button class="chip-item" data-open="profile">
+                <span class="chip-label tag-d" id="chipLabelProfile" data-t="nav_profile">프로필</span><span class="chip-count" id="statProfile">0</span>
+              </button>
+              <button class="chip-item" data-open="gallery" data-cat="커미션">
+                <span class="chip-label tag-c" id="chipLabelCommission" data-t="nav_commission">커미션</span><span class="chip-count" id="statCommission">0</span>
+              </button>
+              <button class="chip-item" data-open="novel">
+                <span class="chip-label tag-a" id="chipLabelNovel" data-t="nav_novel">소설</span><span class="chip-count" id="statNovel">0</span>
+              </button>
+              <button class="chip-item" data-open="gallery" data-cat="그림">
+                <span class="chip-label tag-b" id="chipLabelDoodle" data-t="nav_doodle">낙서</span><span class="chip-count" id="statDoodle">0</span>
+              </button>
+            </div>
+          </div>
+          <div class="main-image-frame" id="mainImageFrame">
+            <div class="placeholder" id="mainImagePlaceholder" data-t="main_placeholder"></div>
+            <img id="mainImageEl" alt="" style="display:none;">
+            <div class="sticker-layer" id="stickerLayer"></div>
+          </div>
+          <div class="today-date"><span data-t="today_label">Today</span> <span id="todayDate"></span></div>
+        </div>
+
+        <div class="content-section" data-content="profile">
+          <div class="pill-tabs" id="profileAuTabs">
+            <button class="pill-tab active">기본</button>
+          </div>
+          <div id="profileCards"></div>
+        </div>
+
+        <div class="content-section" data-content="novel">
+          <div class="novel-layout">
+            <div class="ep-list" id="epList"><div class="ep-item active">회차를 불러오는 중…</div></div>
+            <div class="ep-reader" id="epReader"><h3>—</h3><p></p></div>
+          </div>
+        </div>
+
+        <div class="content-section" data-content="gallery">
+          <div class="gallery-tabs" id="galleryTabs">
+            <button class="pill-tab active" data-cat="그림" data-t="gal_tab_art">그림</button>
+            <button class="pill-tab" data-cat="커미션" data-t="nav_commission">커미션</button>
+          </div>
+          <div class="gallery-grid" id="galleryGrid"><div></div><div></div><div></div></div>
+        </div>
+
+      </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <!-- 오른쪽 사이드 패널 (책과 분리된 별도 플로팅 패널, 기념일/BGM 전용) -->
+  <div class="side-col">
+    <div class="side-panel">
+      <div class="bgm-widget">
+        <div class="bgm-cover" id="bgmCover"><img id="bgmCoverImg" alt="" style="display:none"></div>
+        <div class="bgm-title" id="bgmTitle">등록된 곡이 없습니다</div>
+        <div class="bgm-artist" id="bgmArtist"></div>
+        <input type="range" class="bgm-seek" id="bgmSeek" min="0" max="1000" step="1" value="0" aria-label="재생 위치">
+        <div class="bgm-controls">
+          <button class="bgm-extra off" id="bgmShuffle" type="button" aria-label="셔플"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18h3.5c2.5 0 3.8-1.2 5-3l3-5c1.200-1.800 2.500-3 5-3H22"/><path d="M2 6h3.5c2.500 0 3.800 1.200 5 3M14 15c1.200 1.800 2.500 3 5 3H22"/><path d="M19 3l3 3-3 3M19 15l3 3-3 3"/></svg></button>
+          <button id="bgmPrev" type="button" aria-label="처음으로"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="4" width="3" height="16"/><path d="M21 4v16L8 12z"/></svg></button>
+          <button id="bgmPlayBtn" type="button" aria-label="재생/일시정지"><svg class="ic-play" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg><svg class="ic-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="1"/><rect x="14" y="4" width="5" height="16" rx="1"/></svg></button>
+          <button id="bgmNext" type="button" aria-label="끝으로"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="18" y="4" width="3" height="16"/><path d="M3 4v16l13-8z"/></svg></button>
+          <button class="bgm-extra" id="bgmRepeat" type="button" aria-label="반복"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg></button>
+        </div>
+        <audio id="bgmAudio" loop></audio>
+      </div>
+      <div class="anniversary-widget">
+        <div class="anniversary-label" id="annivLabel">함께한 지</div>
+        <div class="anniversary-days" id="annivDays">—</div>
+        <a class="write-btn" href="dominverse-admin.html" id="writeBtn" data-t="side_write" hidden>✏ 글쓰기</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 갤러리 원본 이미지 팝업 -->
+<div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true">
+  <div class="lb-box">
+    <button class="lb-close" id="lbClose" type="button" aria-label="닫기">×</button>
+    <img id="lbImg" alt="">
+    <button class="lb-nav lb-prev" id="lbPrev" type="button" aria-label="이전 이미지" hidden>‹</button>
+    <button class="lb-nav lb-next" id="lbNext" type="button" aria-label="다음 이미지" hidden>›</button>
+    <div class="lb-count" id="lbCount" hidden></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+//  Supabase 연동
+// ══════════════════════════════════════
+const SUPABASE_URL = 'https://gsuimspbkmsimoboddci.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_QBbODY8dYcrjArbsSfQG2w_RDvvxvuM';
+const TABLE = 'domination_posts';
+const sbHeaders = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` };
+
+async function dbSelect(section){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?select=*&section=eq.${section}&order=sort_order.asc`,{headers:sbHeaders});
+  if(!r.ok) throw new Error('load fail: '+r.status);
+  return r.json();
+}
+async function dbSelectRecent(section, limit){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?select=*&section=eq.${section}&order=created_at.desc&limit=${limit}`,{headers:sbHeaders});
+  if(!r.ok) throw new Error('load fail: '+r.status);
+  return r.json();
+}
+function escapeHtml(s){
+  return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function bgStyle(url){
+  return url ? `background-image:url('${escapeHtml(url)}');background-size:cover;background-position:center;` : '';
+}
+
+// ══════════════════════════════════════
+//  텍스트(라벨) — 관리자 > 텍스트(라벨)에서 바꾼 문구 적용
+//  HTML에 적힌 문구가 기본값이고, 등록된 값이 있을 때만 덮어씁니다.
+// ══════════════════════════════════════
+const TEXTS = {};
+const TEXT_LEGACY = { label_novel:'nav_novel', label_doodle:'nav_doodle', label_commission:'nav_commission', label_profile:'nav_profile' };
+const TEXT_READY = (async ()=>{
+  try{
+    const [rows, theme] = await Promise.all([ dbSelect('site_text').catch(()=>[]), dbSelect('site_theme').catch(()=>[]) ]);
+    // 예전 '테마 설정 > 칩 글자' 값도 계속 유효 (새 값이 있으면 새 값 우선)
+    theme.forEach(it=>{ const k = TEXT_LEGACY[it.category]; if(k && it.image_url) TEXTS[k] = it.image_url; });
+    rows.forEach(it=>{ if(it.category && it.title) TEXTS[it.category] = it.title; });
+  }catch(e){ /* 기본 문구 유지 */ }
+  document.querySelectorAll('[data-t]').forEach(el=>{ const v = TEXTS[el.dataset.t]; if(v) el.textContent = v; });
+  if(TEXTS.doc_title) document.title = TEXTS.doc_title;
+  if(TEXTS.side_write_url){ const w=document.getElementById('writeBtn'); if(w) w.setAttribute('href', TEXTS.side_write_url); }
+})();
+function t(key, def){ return TEXTS[key] || def; }
+
+// ══════════════════════════════════════
+//  탭 전환 (사이드 nav + 모바일 탭바 공용)
+// ══════════════════════════════════════
+function openTab(id){
+  document.querySelectorAll('.content-section').forEach(sec=>sec.classList.toggle('active', sec.dataset.content===id));
+  document.querySelectorAll('.chip-item').forEach(b=>b.classList.toggle('active', b.dataset.open===id));
+  document.querySelectorAll('.mobile-tabbar button').forEach(b=>b.classList.toggle('active', b.dataset.open===id));
+}
+document.querySelectorAll('[data-open]').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    openTab(el.dataset.open);
+    if(el.dataset.cat){
+      activeCat = el.dataset.cat;
+      document.querySelectorAll('#galleryTabs .pill-tab').forEach(b=>b.classList.toggle('active', b.dataset.cat===activeCat));
+      renderGalleryGrid();
+    }
+    if(el.classList.contains('index-tab')){
+      document.querySelectorAll('.index-tab').forEach(b=>b.classList.remove('active'));
+      el.classList.add('active');
+    }
+  });
+});
+
+// ══════════════════════════════════════
+//  방문자 카운터 (로컬 저장 기반)
+// ══════════════════════════════════════
+function updateVisitCounter(){
+  const todayKey = 'dv_today_' + new Date().toISOString().slice(0,10);
+  const today = (parseInt(localStorage.getItem(todayKey)||'0',10) + 1);
+  localStorage.setItem(todayKey, today);
+  const total = (parseInt(localStorage.getItem('dv_total')||'0',10) + 1);
+  localStorage.setItem('dv_total', total);
+  document.getElementById('todayCount').textContent = today;
+  document.getElementById('totalCount').textContent = total;
+}
+updateVisitCounter();
+
+// ══════════════════════════════════════
+//  바깥 배경
+// ══════════════════════════════════════
+async function loadPageBackground(){
+  try{
+    const items = await dbSelect('page_bg');
+    if(!items.length) return;
+    const it = items[0];
+    const bg = document.getElementById('pageBg');
+    if(it.category === 'color' && it.image_url){
+      bg.classList.remove('mode-image'); bg.classList.add('mode-color');
+      bg.style.backgroundImage = 'none';
+      bg.style.backgroundColor = it.image_url;
+    } else if(it.image_url){
+      bg.classList.remove('mode-color'); bg.classList.add('mode-image');
+      bg.style.backgroundColor = '';
+      bg.style.backgroundImage = `url('${it.image_url.replace(/'/g,"\\'")}')`;
+      // 관리자에서 정한 블러(px, title) / 불투명도(%, summary). 비어 있으면 기본 50px / 55%
+      const num = v => (v!==null && v!==undefined && v!=='' && !isNaN(+v)) ? +v : null;
+      const blur = num(it.title), op = num(it.summary);
+      const root = document.documentElement.style;
+      root.setProperty('--bg-blur', (blur===null ? 50 : blur) + 'px');
+      root.setProperty('--bg-opacity', (op===null ? 55 : op) / 100);
+    }
+  }catch(e){ /* 테이블 미생성 등 - 기본 상태 유지 */ }
+}
+
+// ══════════════════════════════════════
+//  메인 이미지 + 스티커
+// ══════════════════════════════════════
+let hasMainImg = false, hasFrameBg = false;
+function updatePlaceholder(){
+  // 메인 이미지나 스티커 영역 배경이 하나라도 있으면 안내 문구를 숨김
+  document.getElementById('mainImagePlaceholder').style.display = (hasMainImg || hasFrameBg) ? 'none' : 'flex';
+}
+async function loadMainImage(){
+  try{
+    const items = await dbSelect('main_image');
+    if(items.length && items[0].image_url){
+      const img = document.getElementById('mainImageEl');
+      img.src = items[0].image_url;
+      img.style.display = 'block';
+      hasMainImg = true; updatePlaceholder();
+    }
+  }catch(e){ /* 무시 */ }
+}
+
+// 스티커 붙는 영역(메인 이미지 프레임) 배경 — 사진 또는 단색
+async function loadStickerBg(){
+  try{
+    const items = await dbSelect('sticker_bg');
+    if(!items.length || !items[0].image_url) return;
+    const it = items[0];
+    hasFrameBg = true; updatePlaceholder();
+    const frame = document.getElementById('mainImageFrame');
+    if(it.category === 'color'){
+      frame.style.backgroundImage = 'none';
+      frame.style.backgroundColor = it.image_url;
+    } else {
+      frame.style.backgroundColor = '';
+      frame.style.backgroundImage = `url('${it.image_url.replace(/'/g,"\\'")}')`;
+      frame.style.backgroundSize = 'cover';
+      frame.style.backgroundPosition = 'center';
+      frame.style.backgroundRepeat = 'no-repeat';
+    }
+  }catch(e){ /* 무시 */ }
+}
+
+async function loadStickers(){
+  try{
+    const items = await dbSelect('sticker');
+    const layer = document.getElementById('stickerLayer');
+    layer.innerHTML = items.map(s=>{
+      const x = s.x_pos ?? 50, y = s.y_pos ?? 50, w = s.width_px || 100, rot = s.rotation || 0;
+      const z = s.sort_order || 0;
+      return `<span class="sticker-item" style="left:${x}%;top:${y}%;width:${w}px;z-index:${z};transform:translate(-50%,-50%) rotate(${rot}deg);">
+        <img src="${escapeHtml(s.image_url)}" alt="" draggable="false">
+        <span class="resize-handle"></span>
+      </span>`;
+    }).join('');
+  }catch(e){ /* 무시 */ }
+}
+
+document.getElementById('stickerLayer').addEventListener('mousedown', e=>{
+  const handle = e.target.closest('.resize-handle');
+  const item = e.target.closest('.sticker-item');
+  if(!item) return;
+  if(handle){
+    e.preventDefault();
+    const startWidth = item.getBoundingClientRect().width;
+    const startX = e.clientX;
+    function onMove(e){ item.style.width = Math.max(20, startWidth + (e.clientX - startX)) + 'px'; }
+    function onUp(){ document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return;
+  }
+  const img = e.target.closest('img');
+  if(!img) return;
+  e.preventDefault();
+  const parentRect = item.parentElement.getBoundingClientRect();
+  const rect = item.getBoundingClientRect();
+  let curLeft = rect.left - parentRect.left + rect.width/2;
+  let curTop = rect.top - parentRect.top + rect.height/2;
+  item.style.left = curLeft + 'px';
+  item.style.top = curTop + 'px';
+  const startX = e.clientX, startY = e.clientY;
+  function onMove(e){
+    item.style.left = (curLeft + e.clientX - startX) + 'px';
+    item.style.top = (curTop + e.clientY - startY) + 'px';
+  }
+  function onUp(){ document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+});
+
+// ══════════════════════════════════════
+//  Updated news (게시판)
+// ══════════════════════════════════════
+// 메뉴 썸네일(메뉴 왼쪽 작은 이미지): 관리자에서 등록하면 그 이미지, 없으면 갤러리 첫 이미지
+let menuThumbSet = false;
+async function loadMenuThumb(){
+  try{
+    const items = await dbSelect('menu_thumb');
+    if(!items.length || !items[0].image_url) return;
+    menuThumbSet = true;
+    document.getElementById('contentThumb').innerHTML = `<img src="${escapeHtml(items[0].image_url)}" alt="">`;
+  }catch(e){ /* 무시 */ }
+}
+
+async function loadContentTop(){
+  await TEXT_READY;
+  try{
+    const [novels, galleries] = await Promise.all([
+      dbSelectRecent('novel', 20), dbSelectRecent('gallery', 20)
+    ]);
+    const doodles = galleries.filter(g=>g.category !== '커미션');
+    const commissions = galleries.filter(g=>g.category === '커미션');
+    document.getElementById('statNovel').textContent = novels.length;
+    document.getElementById('statDoodle').textContent = doodles.length;
+    document.getElementById('statCommission').textContent = commissions.length;
+
+    const thumbUrl = (galleries.find(g=>g.image_url) || {}).image_url;
+    if(thumbUrl && !menuThumbSet){
+      document.getElementById('contentThumb').innerHTML = `<img src="${escapeHtml(thumbUrl)}" alt="">`;
+    }
+  }catch(e){ /* 무시 */ }
+}
+
+function updateTodayDate(){
+  const d = new Date();
+  const s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  document.getElementById('todayDate').textContent = s;
+}
+updateTodayDate();
+
+// ══════════════════════════════════════
+//  프로필
+// ══════════════════════════════════════
+let PROFILES = [];
+// 메인 프로필 카드 사진 (관리자 > 메인 화면 이미지 > ⑤ 메인 프로필 사진) — 프로필 메뉴와는 별개
+async function loadMainProfile(){
+  try{
+    const items = await dbSelect('main_profile');
+    if(items.length && items[0].image_url){
+      const im = document.getElementById('avatarImg');
+      im.src = items[0].image_url; im.style.display = 'block';
+    }
+  }catch(e){ /* 무시 */ }
+}
+async function loadProfiles(){
+  await TEXT_READY;
+  try{ PROFILES = await dbSelect('profile'); }catch(e){ PROFILES = []; }
+  renderAuTabs();
+  document.getElementById('statProfile').textContent = PROFILES.length;
+}
+// 버전(AU) 칩: 박도현·유민은 항상 함께 보이므로 이름 탭 없이, 같은 AU 라벨의 두 캐릭터 카드를 함께 표시
+function renderAuTabs(){
+  const group = document.getElementById('profileAuTabs');
+  const labels = [];
+  PROFILES.forEach(p=>{ const l = p.au_label || '기본'; if(!labels.includes(l)) labels.push(l); });
+  if(!labels.length){
+    group.innerHTML = `<button class="pill-tab active">기본</button>`;
+    renderProfileCards(null);
+    return;
+  }
+  group.innerHTML = labels.map((l,i)=>`<button class="pill-tab ${i===0?'active':''}" data-label="${escapeHtml(l)}">${escapeHtml(l)}</button>`).join('');
+  group.querySelectorAll('.pill-tab').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      group.querySelectorAll('.pill-tab').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      renderProfileCards(btn.dataset.label);
+    });
+  });
+  renderProfileCards(labels[0]);
+}
+function renderProfileCards(label){
+  const wrap = document.getElementById('profileCards');
+  const list = label === null ? [] : PROFILES.filter(p=>(p.au_label||'기본')===label);
+  if(!list.length){
+    wrap.innerHTML = `<div class="profile-card"><div class="photo"></div><div><p>${escapeHtml(t('profile_empty','관리자에서 프로필을 등록하면 이곳에 표시됩니다.'))}</p></div></div>`;
+    return;
+  }
+  wrap.innerHTML = list.map(item=>{
+    const stats = (item.body||'').split('\n').filter(Boolean).map(l=>`<span>${escapeHtml(l)}</span>`).join('');
+    return `<div class="profile-card">
+      <div class="photo" style="${bgStyle(item.image_url)}"></div>
+      <div><b>${escapeHtml(item.character)}</b><p>${escapeHtml(item.summary||'')}</p><div class="profile-stats">${stats}</div></div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════
+//  소설
+// ══════════════════════════════════════
+let NOVELS = [];
+async function loadNovel(){
+  await TEXT_READY;
+  try{ NOVELS = await dbSelect('novel'); }catch(e){ NOVELS = []; }
+  document.getElementById('statNovel').textContent = NOVELS.length;
+  const list = document.getElementById('epList');
+  if(!NOVELS.length){
+    list.innerHTML = `<div class="ep-item active">${escapeHtml(t('novel_empty','등록된 회차가 없습니다'))}</div>`;
+    document.getElementById('epReader').innerHTML = `<h3>—</h3><p>관리자에서 회차를 등록하면 이곳에 표시됩니다.</p>`;
+    return;
+  }
+  list.innerHTML = NOVELS.map((n,i)=>`<div class="ep-item ${i===0?'active':''}" data-id="${n.id}">${n.episode_no??''}화 · ${escapeHtml(n.title||'제목 미정')}</div>`).join('');
+  list.querySelectorAll('.ep-item').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      list.querySelectorAll('.ep-item').forEach(e=>e.classList.remove('active'));
+      el.classList.add('active');
+      renderEpisode(NOVELS.find(x=>String(x.id)===el.dataset.id));
+    });
+  });
+  renderEpisode(NOVELS[0]);
+}
+function renderEpisode(n){
+  document.getElementById('epReader').innerHTML =
+    `<h3>${n.episode_no??''}화 · ${escapeHtml(n.title||'제목 미정')}</h3><p>${escapeHtml(n.body||'').replace(/\n/g,'<br>')}</p>`;
+}
+
+// ══════════════════════════════════════
+//  그림갤러리
+// ══════════════════════════════════════
+let GALLERY = [];
+let activeCat = '그림';
+async function loadGallery(){
+  try{ GALLERY = await dbSelect('gallery'); }catch(e){ GALLERY = []; }
+  renderGalleryGrid();
+}
+// 묶음 이미지: 대표(image_url) + 추가 이미지(body에 한 줄에 하나씩)
+function galleryImages(it){
+  const list = [];
+  if(it.image_url) list.push(it.image_url);
+  String(it.body||'').split(/\r?\n/).map(x=>x.trim()).filter(x=>/^(https?:|\/|data:)/i.test(x)).forEach(x=>list.push(x));
+  return list;
+}
+let CUR_ITEMS = [];
+function renderGalleryGrid(){
+  const grid = document.getElementById('galleryGrid');
+  const items = GALLERY.filter(g=>g.category===activeCat);
+  CUR_ITEMS = items;
+  grid.innerHTML = items.length
+    ? items.map((it,i) => { const n = galleryImages(it).length; return `<div data-url="${escapeHtml(it.image_url||'')}" data-i="${i}"${it.title?` data-title="${escapeHtml(it.title)}"`:''} style="${bgStyle(it.image_url)}">${n>1?`<span class="multi-badge">+${n-1}</span>`:''}</div>`; }).join('')
+    : `<div></div><div></div><div></div>`;
+}
+document.querySelectorAll('#galleryTabs .pill-tab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#galleryTabs .pill-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeCat = btn.dataset.cat;
+    renderGalleryGrid();
+  });
+});
+
+// ── 갤러리 그림 클릭 → 원본 이미지 팝업 (그림 클릭: 실제 픽셀 크기 ↔ 화면에 맞춤 전환)
+const lightbox = document.getElementById('lightbox');
+const lbImg = document.getElementById('lbImg');
+let lbList = [], lbIdx = 0;
+function showLb(){
+  lbImg.src = lbList[lbIdx];
+  const multi = lbList.length > 1;
+  document.getElementById('lbPrev').hidden = !multi;
+  document.getElementById('lbNext').hidden = !multi;
+  const c = document.getElementById('lbCount'); c.hidden = !multi; c.textContent = (lbIdx+1) + ' / ' + lbList.length;
+}
+function openLightbox(list, start){
+  lbList = Array.isArray(list) ? list.filter(Boolean) : (list ? [list] : []);
+  if(!lbList.length) return;
+  lbIdx = start || 0;
+  showLb();
+  lightbox.hidden = false;
+  document.body.style.overflow = 'hidden';
+}
+function lbMove(d){
+  if(lbList.length < 2) return;
+  lbIdx = (lbIdx + d + lbList.length) % lbList.length;
+  showLb();
+}
+function closeLightbox(){
+  lightbox.hidden = true;
+  lbImg.removeAttribute('src');
+  document.body.style.overflow = '';
+}
+document.getElementById('galleryGrid').addEventListener('click', e=>{
+  const d = e.target.closest('[data-url]');
+  if(!d) return;
+  const it = CUR_ITEMS[+d.dataset.i];
+  openLightbox(it ? galleryImages(it) : d.dataset.url, 0);
+});
+document.getElementById('lbPrev').addEventListener('click', ()=>lbMove(-1));
+document.getElementById('lbNext').addEventListener('click', ()=>lbMove(1));
+// 터치: 좌우로 밀어서 넘기기
+let lbTouchX = null;
+lightbox.addEventListener('touchstart', e=>{ lbTouchX = e.touches[0].clientX; }, {passive:true});
+lightbox.addEventListener('touchend', e=>{
+  if(lbTouchX === null) return;
+  const dx = e.changedTouches[0].clientX - lbTouchX; lbTouchX = null;
+  if(Math.abs(dx) > 50) lbMove(dx < 0 ? 1 : -1);
+}, {passive:true});
+document.getElementById('lbClose').addEventListener('click', closeLightbox);
+lightbox.addEventListener('click', e=>{ if(e.target === lightbox) closeLightbox(); });
+document.addEventListener('keydown', e=>{
+  if(lightbox.hidden) return;
+  if(e.key==='Escape') closeLightbox();
+  else if(e.key==='ArrowLeft') lbMove(-1);
+  else if(e.key==='ArrowRight') lbMove(1);
+});
+
+// ══════════════════════════════════════
+//  테마 설정 (색상 / 칩 글자)
+// ══════════════════════════════════════
+async function loadTheme(){
+  try{
+    const items = await dbSelect('site_theme');
+    const map = {};
+    items.forEach(it=>{ if(it.category) map[it.category] = it.image_url; });
+    const root = document.documentElement.style;
+    if(map.accent) root.setProperty('--accent', map.accent);
+    if(map.tag_a) root.setProperty('--tag-a-bg', map.tag_a);
+    if(map.tag_b) root.setProperty('--tag-b-bg', map.tag_b);
+    if(map.tag_c) root.setProperty('--tag-c-bg', map.tag_c);
+    if(map.tag_d) root.setProperty('--tag-d-bg', map.tag_d);
+    ['a','b','c','d'].forEach(x=>{ if(map['chip_text_'+x]) root.setProperty('--tag-'+x+'-text', map['chip_text_'+x]); });
+    ['home','profile','novel','commission'].forEach(k=>{
+      if(map['tab_'+k]) root.setProperty('--tab-'+k+'-bg', map['tab_'+k]);
+      if(map['tab_text_'+k]) root.setProperty('--tab-'+k+'-text', map['tab_text_'+k]);
+    });
+    if(map.side_bgm_bg) root.setProperty('--side-bgm-bg', map.side_bgm_bg);
+    if(map.side_anniv_bg) root.setProperty('--side-anniv-bg', map.side_anniv_bg);
+    ['main','profile','novel','gallery'].forEach(k=>{
+      if(map['mtab_'+k]) root.setProperty('--mtab-'+k+'-bg', map['mtab_'+k]);
+      if(map['mtab_text_'+k]) root.setProperty('--mtab-'+k+'-text', map['mtab_text_'+k]);
+    });
+    if(map.tab_active) root.setProperty('--tab-active-bg', map.tab_active);
+    if(map.tab_active_text) root.setProperty('--tab-active-text', map.tab_active_text);
+  }catch(e){ /* 무시 */ }
+}
+
+// ══════════════════════════════════════
+//  메뉴 아이콘 (구 폴더 아이콘) - 이미지/이름
+// ══════════════════════════════════════
+
+// ══════════════════════════════════════
+//  BGM
+// ══════════════════════════════════════
+function setBgmTitle(text){
+  const el = document.getElementById('bgmTitle');
+  el.classList.remove('marquee');
+  el.innerHTML = '';
+  const sp = document.createElement('span'); sp.className = 'in'; sp.textContent = text;
+  el.appendChild(sp);
+  updateBgmMarquee();
+}
+function updateBgmMarquee(){
+  const el = document.getElementById('bgmTitle'); const sp = el.querySelector('.in');
+  if(!sp) return;
+  el.classList.remove('marquee');
+  if(!el.clientWidth) return;                       // 숨겨진 상태면 건너뜀
+  const shift = sp.scrollWidth - el.clientWidth;
+  if(shift > 2){
+    el.style.setProperty('--mq-shift', (-shift)+'px');
+    el.style.setProperty('--mq-dur', Math.max(6, shift/20 + 4)+'s');
+    el.classList.add('marquee');
+  }
+}
+window.addEventListener('resize', updateBgmMarquee);
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(updateBgmMarquee);
+async function loadBGM(){
+  await TEXT_READY;
+  try{
+    let globalCover = '';
+    try{
+      const cv = await dbSelect('bgm_cover');
+      if(cv.length && cv[0].image_url) globalCover = cv[0].image_url;
+    }catch(e){ /* 커버 없음 */ }
+    const all = await dbSelect('site_bgm');
+    const tracks = all.filter(x=>x.image_url);
+    if(!tracks.length){
+      setBgmTitle(t('bgm_empty','등록된 곡이 없습니다'));
+      if(globalCover){ const ci = document.getElementById('bgmCoverImg'); ci.src = globalCover; ci.style.display = 'block'; }
+      return;
+    }
+    const audio = document.getElementById('bgmAudio');
+    const btn = document.getElementById('bgmPlayBtn');
+    const seek = document.getElementById('bgmSeek');
+    const rep = document.getElementById('bgmRepeat');
+    const shuf = document.getElementById('bgmShuffle');
+    audio.volume = 0.6; audio.loop = false;
+    let idx = 0, repeatAll = true, shuffle = false, dragging = false;
+    const isUrl = v => /^(https?:|\/|data:)/i.test(String(v||'').trim());
+
+    function loadTrack(i, autoplay){
+      idx = (i + tracks.length) % tracks.length;
+      const it = tracks[idx];
+      setBgmTitle(it.title || '제목 미상');
+      document.getElementById('bgmArtist').textContent = it.summary || '';
+      const cover = isUrl(it.body) ? it.body.trim() : globalCover;   // 곡별 커버 → 없으면 공통 커버
+      const cimg = document.getElementById('bgmCoverImg'), cbox = document.getElementById('bgmCover');
+      if(cover){ cimg.src = cover; cimg.style.display = 'block'; } else { cimg.removeAttribute('src'); cimg.style.display = 'none'; }
+      audio.src = it.image_url;
+      seek.value = 0;
+      if(autoplay) audio.play().catch(()=>{});
+    }
+    function nextIndex(){
+      if(shuffle && tracks.length > 1){
+        let j; do{ j = Math.floor(Math.random()*tracks.length); }while(j === idx);
+        return j;
+      }
+      return idx + 1;
+    }
+    function goNext(auto){
+      const n = nextIndex();
+      if(n >= tracks.length && !shuffle && !repeatAll && auto){   // 반복 꺼짐: 마지막 곡이 끝나면 정지
+        loadTrack(0, false); return;
+      }
+      loadTrack(n, true);
+    }
+    function goPrev(){
+      if(audio.currentTime > 3){ audio.currentTime = 0; return; }
+      loadTrack(idx - 1, true);
+    }
+    loadTrack(0, false);
+
+    const setPlaying = on => btn.classList.toggle('playing', on);
+    btn.addEventListener('click', ()=>{ if(audio.paused){ audio.play().catch(()=>{}); } else { audio.pause(); } });
+    audio.addEventListener('play',  ()=>setPlaying(true));
+    audio.addEventListener('pause', ()=>setPlaying(false));
+    audio.addEventListener('ended', ()=>goNext(true));
+    audio.addEventListener('timeupdate', ()=>{
+      if(!dragging && audio.duration) seek.value = Math.round(audio.currentTime / audio.duration * 1000);
+    });
+    seek.addEventListener('input', ()=>{ dragging = true; });
+    seek.addEventListener('change', ()=>{
+      if(audio.duration) audio.currentTime = seek.value / 1000 * audio.duration;
+      dragging = false;
+    });
+    document.getElementById('bgmPrev').addEventListener('click', goPrev);
+    document.getElementById('bgmNext').addEventListener('click', ()=>goNext(false));
+    rep.classList.toggle('off', !repeatAll);
+    rep.addEventListener('click', ()=>{ repeatAll = !repeatAll; rep.classList.toggle('off', !repeatAll); });
+    shuf.classList.toggle('off', !shuffle);
+    shuf.addEventListener('click', ()=>{ shuffle = !shuffle; shuf.classList.toggle('off', !shuffle); });
+  }catch(e){ /* 무시 */ }
+}
+
+// ══════════════════════════════════════
+//  폰트 (관리자 > 폰트) — 등록이 없으면 기본 SUITE 유지
+//  ※ FONT_PRESETS 는 dominverse-admin.html 과 같은 목록
+// ══════════════════════════════════════
+const FONT_PRESETS = {
+  'Noto Sans KR':'wght@400;500;700', 'Noto Serif KR':'wght@400;700',
+  'Nanum Gothic':'wght@400;700', 'Nanum Myeongjo':'wght@400;700',
+  'Gowun Batang':'wght@400;700', 'Gowun Dodum':'',
+  'IBM Plex Sans KR':'wght@400;500;700', 'Gothic A1':'wght@400;500;700',
+  'Black Han Sans':'', 'Jua':'', 'Do Hyeon':'', 'Song Myung':'', 'Hi Melody':'', 'Yeon Sung':''
+};
+async function loadFont(){
+  try{
+    const items = await dbSelect('site_font');
+    if(!items.length) return;
+    const it = items[0];
+    const name = String(it.title||'').replace(/["'\\<>]/g,'').trim();
+    if(!name) return;
+    const cat = it.category || 'preset';
+    const url = (it.image_url||'').trim();
+    let loaded = Promise.resolve();
+    const wait = el => new Promise(res=>{ el.onload = res; el.onerror = res; setTimeout(res, 2000); });
+    if(cat==='preset'){
+      const spec = FONT_PRESETS[name];
+      const l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family='+encodeURIComponent(name).replace(/%20/g,'+')+(spec?':'+spec:'')+'&display=swap';
+      loaded = wait(l);
+      document.head.appendChild(l);
+    } else if(cat==='css' && url){
+      const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = url;
+      loaded = wait(l);
+      document.head.appendChild(l);
+    } else if(cat==='file' && url){
+      const st = document.createElement('style');
+      st.textContent = `@font-face{font-family:"${name}";src:url("${url.replace(/"/g,'%22')}");font-weight:100 900;font-display:swap;}`;
+      document.head.appendChild(st);
+    } else { return; }
+    document.documentElement.style.setProperty('--font-main', `"${name}", 'SUITE', sans-serif`);
+    await loaded;
+    try{ await Promise.race([ document.fonts.load(`700 14px "${name}"`), new Promise(r=>setTimeout(r,1500)) ]); }catch(e){}
+  }catch(e){ /* 무시 */ }
+}
+
+// ══════════════════════════════════════
+//  기념일
+// ══════════════════════════════════════
+async function loadAnniversary(){
+  await TEXT_READY;
+  try{
+    const items = await dbSelect('anniversary');
+    if(!items.length) return;
+    const it = items[0];
+    if(it.title) document.getElementById('annivLabel').textContent = it.title;
+    if(it.body){
+      const start = new Date(it.body);
+      if(!isNaN(start)){
+        const days = Math.floor((Date.now() - start.getTime()) / 86400000) + 1;
+        document.getElementById('annivDays').textContent = days + t('anniv_suffix','일째');
+      }
+    }
+  }catch(e){ /* 무시 */ }
+}
+
+async function loadLoadingLogo(){
+  try{
+    const items = await dbSelect('loading_logo');
+    const it = items[0];
+    if(it && (it.image_url || it.title)) localStorage.setItem('dv_loading', JSON.stringify({ img: it.image_url||'', text: it.title||'' }));
+    else localStorage.removeItem('dv_loading');
+  }catch(e){ /* 무시 */ }
+}
+// 글쓰기 버튼은 관리자에 로그인한 적 있는 이 브라우저에서만 보임 (같은 주소의 관리자 페이지에서 로그인하면 저장됨)
+try{ if(localStorage.getItem('dv_admin_authed') === 'yes'){ const w = document.getElementById('writeBtn'); if(w) w.hidden = false; } }catch(e){}
+const BOOT_TASKS = [
+  loadLoadingLogo(), loadMainProfile(),
+  loadPageBackground(), loadMainImage(), loadStickerBg(), loadMenuThumb(),
+  loadStickers(), loadContentTop(), loadProfiles(), loadNovel(), loadGallery(),
+  loadBGM(), loadAnniversary(), loadTheme(), loadFont(), TEXT_READY
+];
+// 설정(색·문구·폰트·배경·메인 이미지)이 모두 적용된 뒤 화면을 보여줌
+Promise.allSettled(BOOT_TASKS).then(()=>{ requestAnimationFrame(()=>window.dvReveal && window.dvReveal()); });
+</script>
+</body>
+</html>
