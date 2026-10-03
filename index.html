@@ -214,14 +214,28 @@ body{
 .menu-label{
   font-size:12px; color:var(--ink-soft); margin-bottom:6px;
 }
-/* 메인 메뉴 카드: 가로로 긴 이미지 4개 + 제목, 호버 시 검은 오버레이 40% */
+.content-top{
+  display:flex; gap:14px; margin-bottom:16px;
+  padding-bottom:16px; border-bottom:1px dashed var(--line);
+}
+.content-thumb{
+  width:110px; height:110px; aspect-ratio:1/1; flex-shrink:0;
+  border:1px solid var(--line); border-radius:10px;
+  background:var(--paper-dim);
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+}
+.content-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+.content-thumb .thumb-placeholder{ font-size:11px; color:var(--ink-soft); }
+
+/* 메인 메뉴 카드: 가로로 긴 이미지 4개 + 제목, 호버 시 검은 오버레이 40% (미니 썸네일 오른쪽, 썸네일 높이에 맞춤) */
 .menu-cards{
-  display:grid; grid-template-columns:1fr 1fr; gap:10px;
-  margin-bottom:16px; padding-bottom:16px; border-bottom:1px dashed var(--line);
+  flex:1; min-width:0; height:110px;
+  display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:10px;
 }
 .menu-card{
   position:relative; display:flex; align-items:center; justify-content:space-between; gap:8px;
-  aspect-ratio:3.4/1; padding:0 16px; overflow:hidden;
+  min-height:0; padding:0 14px; overflow:hidden;
   border:1px solid var(--line); border-radius:10px; cursor:pointer;
   background-size:cover; background-position:center; background-repeat:no-repeat;
   color:var(--ink); font:inherit; text-align:left;
@@ -234,7 +248,7 @@ body{
 }
 .menu-card:hover::after, .menu-card:focus-visible::after, .menu-card.active::after{ opacity:1; }
 .mc-title, .mc-count{ position:relative; z-index:1; }
-.mc-title{ font-size:15px; font-weight:700; letter-spacing:.02em; }
+.mc-title{ font-size:14px; font-weight:700; letter-spacing:.02em; }
 .mc-count{ font-size:12px; font-weight:700; opacity:.9; }
 .tag-a{ background-color:var(--tag-a-bg); color:var(--tag-a-text, var(--ink)); }
 .tag-b{ background-color:var(--tag-b-bg); color:var(--tag-b-text, var(--ink)); }
@@ -439,6 +453,9 @@ body{
 /* ───────── 중간 너비 (책 폭이 좁아질 때) ───────── */
 @media (max-width:900px){
   .index-tabs{ display:none; }
+  .content-top{ flex-direction:column; }
+  .content-thumb{ width:140px; height:140px; align-self:flex-start; }
+  .menu-cards{ flex:none; width:100%; }
 }
 
 /* ───────── 모바일 ───────── */
@@ -531,6 +548,8 @@ body{
 
         <div class="content-section active" data-content="main">
           <div class="menu-label" data-t="menu_label">menu</div>
+          <div class="content-top">
+            <div class="content-thumb" id="contentThumb"><span class="thumb-placeholder" data-t="thumb_placeholder">img</span></div>
           <div class="menu-cards">
             <button class="menu-card tag-d" data-open="profile" data-card="profile">
               <span class="mc-title" id="chipLabelProfile" data-t="nav_profile">프로필</span><span class="mc-count" id="statProfile">0</span>
@@ -544,6 +563,7 @@ body{
             <button class="menu-card tag-b" data-open="gallery" data-cat="그림" data-card="doodle">
               <span class="mc-title" id="chipLabelDoodle" data-t="nav_doodle">낙서</span><span class="mc-count" id="statDoodle">0</span>
             </button>
+          </div>
           </div>
           <div class="main-image-frame" id="mainImageFrame">
             <div class="placeholder" id="mainImagePlaceholder" data-t="main_placeholder"></div>
@@ -931,6 +951,17 @@ document.getElementById('stickerLayer').addEventListener('mousedown', e=>{
 // ══════════════════════════════════════
 //  Updated news (게시판)
 // ══════════════════════════════════════
+// 메뉴 썸네일(메뉴 왼쪽 작은 이미지): 관리자에서 등록하면 그 이미지, 없으면 갤러리 첫 이미지
+let menuThumbSet = false;
+async function loadMenuThumb(){
+  try{
+    const items = await dbSelect('menu_thumb');
+    if(!items.length || !items[0].image_url) return;
+    menuThumbSet = true;
+    document.getElementById('contentThumb').innerHTML = `<img src="${escapeHtml(items[0].image_url)}" alt="">`;
+  }catch(e){ /* 무시 */ }
+}
+
 // 메뉴 카드 이미지 (관리자 > 메인 화면 이미지 > ② 메뉴 카드 이미지): 카드별 가로로 긴 이미지, 없으면 색상 배경
 async function loadMenuCards(){
   try{
@@ -954,6 +985,11 @@ async function loadContentTop(){
     document.getElementById('statNovel').textContent = novels.length;
     document.getElementById('statDoodle').textContent = doodles.length;
     document.getElementById('statCommission').textContent = commissions.length;
+
+    const thumbUrl = (galleries.find(g=>g.image_url) || {}).image_url;
+    if(thumbUrl && !menuThumbSet){
+      document.getElementById('contentThumb').innerHTML = `<img src="${escapeHtml(thumbUrl)}" alt="">`;
+    }
   }catch(e){ /* 무시 */ }
 }
 
@@ -1351,7 +1387,7 @@ async function loadLoadingLogo(){
 try{ if(localStorage.getItem('dv_admin_authed') === 'yes'){ const w = document.getElementById('writeBtn'); if(w) w.hidden = false; } }catch(e){}
 const BOOT_TASKS = [
   loadLoadingLogo(), loadMainProfile(),
-  loadPageBackground(), loadMainImage(), loadStickerBg(), loadMenuCards(),
+  loadPageBackground(), loadMainImage(), loadStickerBg(), loadMenuThumb(), loadMenuCards(),
   loadStickers(), loadContentTop(), loadProfiles(), loadNovel(), loadGallery(),
   loadBGM(), loadAnniversary(), loadTheme(), loadFont(), TEXT_READY
 ];

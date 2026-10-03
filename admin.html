@@ -214,7 +214,7 @@ body{
     <!-- 메인 이미지 -->
     <div class="panel active" data-panel="main_image">
       <h2>메인 화면 이미지</h2>
-      <p class="desc">메인화면에 보이는 이미지 4가지를 이곳에서 한 번에 관리합니다. ① 스티커 영역 배경: 가운데 큰 영역(스티커가 붙는 곳)의 배경, ② 메뉴 썸네일: 메뉴 왼쪽의 작은 정사각 이미지(중앙 기준으로 정사각형으로 잘려 보입니다), ③ 로딩 화면: 접속 직후 잠깐 보이는 로고/문구, ④ 메인 프로필 사진: 왼쪽 프로필 카드의 원형 사진. 각 항목은 하나만 등록하세요.</p>
+      <p class="desc">메인화면에 보이는 이미지 5가지를 이곳에서 한 번에 관리합니다. ① 스티커 영역 배경: 가운데 큰 영역(스티커가 붙는 곳)의 배경, ② 메뉴 썸네일: 메뉴 왼쪽의 작은 정사각 이미지(중앙 기준으로 정사각형으로 잘려 보입니다), ④ 로딩 화면: 접속 직후 잠깐 보이는 로고/문구, ④ 메인 프로필 사진: 왼쪽 프로필 카드의 원형 사진. 각 항목은 하나만 등록하세요.</p>
 
       <div class="sub-title">① 스티커 영역 배경</div>
       <div class="card" data-section="sticker_bg">
@@ -249,7 +249,32 @@ body{
       </div>
       <div class="list" id="list-sticker_bg"></div>
 
-      <div class="sub-title">② 메뉴 카드 이미지 (메인 메뉴 4칸 — 가로로 긴 이미지 위에 제목이 얹혀요)</div>
+      <div class="sub-title">② 미니 썸네일 (메뉴 왼쪽 작은 이미지)</div>
+      <div class="card" data-section="menu_thumb">
+        <h3 id="mt-form-title">썸네일 설정</h3>
+        <input type="hidden" id="mt-id">
+        <div class="field-row">
+          <div class="field full">
+            <label>이미지 URL (또는 아래에서 파일 선택) — 등록하지 않으면 그림갤러리의 첫 이미지가 자동으로 쓰입니다</label>
+            <input id="mt-image" placeholder="https://...">
+            <div class="upload-row">
+              <input type="file" id="mt-file" accept="image/*">
+              <span class="upload-status" id="mt-file-status"></span>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>정렬 순서</label><input id="mt-order" type="number" value="0"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('menu_thumb')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('menu_thumb')">취소</button>
+        </div>
+        <div class="status" id="mt-status"></div>
+      </div>
+      <div class="list" id="list-menu_thumb"></div>
+
+      <div class="sub-title">③ 메뉴 카드 이미지 (메인 메뉴 4칸 — 가로로 긴 이미지 위에 제목이 얹혀요)</div>
       <div class="card" data-section="menu_card">
         <h3 id="mc-form-title">메뉴 카드 이미지 설정</h3>
         <input type="hidden" id="mc-id">
@@ -266,7 +291,7 @@ body{
         </div>
         <div class="field-row">
           <div class="field full">
-            <label>이미지 URL (또는 아래에서 파일 선택) — 가로로 긴 이미지(권장 약 1020×300px, 3.4:1)를 올려주세요. 같은 카드에 다시 저장하면 이미지가 교체돼요. 등록하지 않으면 색상 배경이 보여요</label>
+            <label>이미지 URL (또는 아래에서 파일 선택) — 가로로 긴 이미지(권장 약 800×200px, 4:1)를 올려주세요. 같은 카드에 다시 저장하면 이미지가 교체돼요. 등록하지 않으면 색상 배경이 보여요</label>
             <input id="mc-image" placeholder="https://...">
             <div class="upload-row">
               <input type="file" id="mc-file" accept="image/*">
@@ -282,7 +307,7 @@ body{
       </div>
       <div class="list" id="list-menu_card"></div>
 
-      <div class="sub-title">③ 로딩 화면 (접속 직후 보이는 로고/문구)</div>
+      <div class="sub-title">④ 로딩 화면 (접속 직후 보이는 로고/문구)</div>
       <div class="card" data-section="loading_logo">
         <h3 id="ld-form-title">로딩 화면 설정</h3>
         <input type="hidden" id="ld-id">
@@ -311,7 +336,7 @@ body{
       </div>
       <div class="list" id="list-loading_logo"></div>
 
-      <div class="sub-title">④ 메인 프로필 사진 (왼쪽 프로필 카드의 동그란 사진)</div>
+      <div class="sub-title">⑤ 메인 프로필 사진 (왼쪽 프로필 카드의 사진)</div>
       <div class="card" data-section="main_profile">
         <h3 id="mp-form-title">메인 프로필 사진 설정</h3>
         <input type="hidden" id="mp-id">
@@ -877,6 +902,7 @@ wireFileUpload('gl-file', 'gl-image', 'gl-file-status', 'gallery');
 wireFileUpload('pg-file', 'pg-value', 'pg-file-status', 'bg');
 wireFileUpload('sb-file', 'sb-value', 'sb-file-status', 'stickerbg');
 wireFileUpload('sf-file', 'sf-url', 'sf-file-status', 'font');
+wireFileUpload('mt-file', 'mt-image', 'mt-file-status', 'thumb');
 wireFileUpload('mc-file', 'mc-image', 'mc-file-status', 'menucard');
 (function(){
   const f = document.getElementById('gl-multi-file'); if(!f) return;
@@ -1112,6 +1138,13 @@ const SECTIONS = {
           </div>
         </div>`;
     }
+  },
+  menu_thumb:{
+    fields:['image_url','sort_order'],
+    read: ()=>({ image_url: val('mt-image'), sort_order: numval('mt-order') }),
+    fill: (it)=>{ setval('mt-image',it.image_url); setval('mt-order',it.sort_order); },
+    idEl:'mt-id', statusEl:'mt-status', titleEl:'mt-form-title',
+    render: (it)=> renderRow(it, '메뉴 썸네일', '')
   },
   menu_card:{
     fields:['category','image_url'],
@@ -1540,6 +1573,7 @@ const TEXT_KEYS = [
   {g:'메뉴 이름 (오른쪽 탭 · 칩 · 모바일 탭바 · 갤러리 탭)', k:'nav_gallery_m', l:'모바일 탭바: 그림갤러리', d:'그림갤러리'},
   {g:'메뉴 이름 (오른쪽 탭 · 칩 · 모바일 탭바 · 갤러리 탭)', k:'gal_tab_art', l:'갤러리 탭: 그림', d:'그림'},
   {g:'메인 화면 문구', k:'menu_label', l:'메뉴 위 작은 글씨', d:'menu'},
+  {g:'메인 화면 문구', k:'thumb_placeholder', l:'메뉴 썸네일 빈 칸 글자', d:'img'},
   {g:'메인 화면 문구', k:'today_label', l:'하단 날짜 앞 글자', d:'Today'},
   {g:'메인 화면 문구', k:'main_placeholder', l:'메인 영역 빈 칸 안내 문구 (기본: 비어 있음 · 스티커 영역 배경이 있으면 자동으로 숨김)', d:''},
   {g:'오른쪽 패널 · 기타', k:'side_write', l:'글쓰기 버튼', d:'✏ 글쓰기'},
