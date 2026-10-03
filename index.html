@@ -1129,12 +1129,12 @@ function renderProfileCommon(label){
   const box = document.getElementById('profileCommon');
   const cur = label || '기본';
   const defs = { 1:'요약', 2:'소개' };
-  const nums = [...new Set(PC_ROWS.map(x=>pcNum(x.category)).filter(n=>n>0))].sort((a,b)=>a-b);
-  box.innerHTML = nums.map(n=>{
-    const rows = PC_ROWS.filter(x=>pcNum(x.category)===n);
-    const r = rows.find(x=>(x.au_label||'').trim()===cur) || rows.find(x=>!(x.au_label||'').trim());
-    if(!r || !(r.body||'').trim()) return '';
-    const lab = (r.title||'').trim() || defs[n] || '';
+  // 공통(AU 라벨 비움) 영역 + 현재 AU 탭 전용 영역을 모두 번호 순서대로 보여줌
+  const rows = PC_ROWS.filter(x=>{ const a=(x.au_label||'').trim(); return !a || a===cur; })
+    .sort((a,b)=> (pcNum(a.category)-pcNum(b.category)) || ((a.id||0)-(b.id||0)));
+  box.innerHTML = rows.map(r=>{
+    if(!(r.body||'').trim()) return '';
+    const lab = (r.title||'').trim() || defs[pcNum(r.category)] || '';
     return `<div class="pc-block">${lab ? `<span class="pc-label">${escapeHtml(lab)}</span>` : ''}<div class="pc-text">${escapeHtml(r.body)}</div></div>`;
   }).join('');
 }
