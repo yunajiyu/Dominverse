@@ -521,15 +521,15 @@ body{
 /* ───────── 모바일 ───────── */
 .mobile-tabbar{ display:none; }
 @media (max-width:400px){
-  body{ padding:56px 24px 24px; }   /* 탭바 높이(44px) + 위 12px, 좌우 여백 24px */
+  body{ padding:56px 12px 24px; }   /* 탭바 높이(44px) + 좌우와 같은 12px 여백, 위쪽부터 시작 */
   .site-row{ flex-direction:column; padding-top:0; margin:0 auto; }
   .side-col{ display:none; }   /* 모바일: 재생바 + 기념일 바 삭제 */
   .book-wrap{ height:auto; }
   .book-pages{ flex-direction:column; gap:0; }
   .book-rings{ display:none; }
   .profile-col{ display:none; }
-  .center-col{ border-radius:0; box-shadow:none; padding:12px; }
-  .center-col:not([data-tab="main"]){ padding:8px; }   /* 프로필·소설·갤러리: 콘텐츠 영역을 넓히기 위해 바깥 패딩 12 → 8 */
+  .center-col{ border-radius:0; box-shadow:none; padding:24px; }   /* 콘텐츠 안쪽 여백 */
+  .center-col:not([data-tab="main"]){ padding:16px; }   /* 프로필·소설·갤러리 콘텐츠 안쪽 여백 */
   #profileCards{ gap:8px; }
   .profile-card{ padding:4px 2px; gap:8px; }
   .nv-row{ gap:10px; padding:14px 4px; }
