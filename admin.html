@@ -455,13 +455,19 @@ body{
       </div>
       <div class="list" id="list-profile"></div>
 
-      <div class="sub-title">공통 설명 영역 (프로필 카드 아래에 보이는 2칸 · 모든 AU 탭에 공통)</div>
+      <div class="sub-title">설명 영역 (프로필 카드 아래에 보이는 2칸 · AU 라벨별로 따로, 비우면 공통)</div>
       <div class="card" data-section="profile_common">
-        <h3 id="pc-form-title">공통 설명 설정</h3>
+        <h3 id="pc-form-title">설명 영역 설정</h3>
         <input type="hidden" id="pc-id">
         <div class="field-row">
+          <div class="field full">
+            <label>어느 AU 탭에 보일까요? — 프로필의 AU 라벨과 똑같이 적으면 그 AU 탭에만 보이고, 비워두면 설명이 없는 모든 AU 탭에 공통으로 보여요</label>
+            <input id="pc-au" list="pc-au-list" placeholder="예: 기본 / AU1 (비우면 공통)"><datalist id="pc-au-list"></datalist>
+          </div>
+        </div>
+        <div class="field-row">
           <div class="field">
-            <label>어느 영역? (고르면 저장된 내용이 불러와져요)</label>
+            <label>어느 영역? (AU와 영역을 고르면 저장된 내용이 불러와져요)</label>
             <select id="pc-slot">
               <option value="summary">1번 영역 (기본 라벨: 요약)</option>
               <option value="intro">2번 영역 (기본 라벨: 소개)</option>
@@ -1129,12 +1135,12 @@ const SECTIONS = {
     render: (it)=> renderRow(it, it.character+' · '+(it.au_label||'기본'), it.summary||'', it.character)
   },
   profile_common:{
-    fields:['category','title','body','sort_order'],
-    // 프로필 탭 아래 공통 설명: category = summary|intro, title = 라벨, body = 내용
-    read: ()=>({ category: val('pc-slot'), title: val('pc-label'), body: val('pc-body'), sort_order: val('pc-slot')==='summary' ? 0 : 1 }),
-    fill: (it)=>{ setval('pc-slot',it.category); setval('pc-label',it.title); setval('pc-body',it.body); },
+    fields:['category','au_label','title','body','sort_order'],
+    // 프로필 탭 아래 설명: category = summary|intro, au_label = AU 라벨(비우면 공통), title = 라벨, body = 내용
+    read: ()=>({ category: val('pc-slot'), au_label: val('pc-au'), title: val('pc-label'), body: val('pc-body'), sort_order: val('pc-slot')==='summary' ? 0 : 1 }),
+    fill: (it)=>{ setval('pc-slot',it.category); setval('pc-au',it.au_label); setval('pc-label',it.title); setval('pc-body',it.body); },
     idEl:'pc-id', statusEl:'pc-status', titleEl:'pc-form-title',
-    render: (it)=> renderRow(it, (it.title || ({summary:'요약', intro:'소개'}[it.category]) || '(라벨 없음)') + '  ['+({summary:'1번 영역', intro:'2번 영역'}[it.category]||it.category)+']', (it.body||'').slice(0,50))
+    render: (it)=> renderRow(it, (it.title || ({summary:'요약', intro:'소개'}[it.category]) || '(라벨 없음)') + '  ['+(it.au_label ? 'AU: '+it.au_label : '공통')+' · '+({summary:'1번 영역', intro:'2번 영역'}[it.category]||it.category)+']', (it.body||'').slice(0,50))
   },
   novel:{
     fields:['category','episode_no','title','summary','body'],
@@ -1474,6 +1480,7 @@ async function loadSection(section){
     CACHE[section] = items;
     if(section==='novel'){ const tl=document.getElementById('nv-tag-list'); if(tl) tl.innerHTML=[...new Set(items.map(x=>(x.summary||'').trim()||(x.episode_no?x.episode_no+'화':'')).filter(Boolean))].map(g=>`<option value="${g.replace(/"/g,'&quot;')}">`).join('');
       const dl=document.getElementById('nv-genre-list'); if(dl) dl.innerHTML=[...new Set(items.map(x=>(x.category||'').trim()).filter(Boolean))].map(g=>`<option value="${g.replace(/"/g,'&quot;')}">`).join(''); }
+    if(section==='profile'){ const dl=document.getElementById('pc-au-list'); if(dl) dl.innerHTML=[...new Set(items.map(x=>(x.au_label||'').trim()||'기본'))].map(g=>`<option value="${g.replace(/"/g,'&quot;')}">`).join(''); }
     if(section==='sticker_bg') applyStickerBgPreview(items);
     if(items.length===0){
       listEl.innerHTML = `<div class="empty">등록된 항목이 없습니다.</div>`;
@@ -1501,7 +1508,7 @@ async function submitItem(section){
     if(ex) idEl.value = ex.id;
   }
   if(section==='profile_common' && !idEl.value){   // 영역마다 1개: 같은 영역이 있으면 그 항목을 수정
-    const ex = (CACHE.profile_common||[]).find(x=>x.category===row.category);
+    const ex = (CACHE.profile_common||[]).find(x=>x.category===row.category && (x.au_label||'').trim()===(row.au_label||'').trim());
     if(ex) idEl.value = ex.id;
   }
   if(section==='site_og' && !idEl.value){   // 링크 미리보기는 1개만: 이미 있으면 그 항목을 교체
@@ -1724,12 +1731,14 @@ function updateNgPreview(){
 }
 ['ng-value','ng-color','ng-category'].forEach(id=>document.getElementById(id).addEventListener('input', updateNgPreview));
 updateNgPreview();
-document.getElementById('pc-slot').addEventListener('change', ()=>{
-  const slot = document.getElementById('pc-slot').value;
-  const ex = (CACHE.profile_common||[]).find(x=>x.category===slot);
-  if(ex){ SECTIONS.profile_common.fill(ex); document.getElementById('pc-id').value = ex.id; }
+function pcPrefill(){
+  const slot = document.getElementById('pc-slot').value, au = document.getElementById('pc-au').value.trim();
+  const ex = (CACHE.profile_common||[]).find(x=>x.category===slot && (x.au_label||'').trim()===au);
+  if(ex){ setval('pc-label',ex.title); setval('pc-body',ex.body); document.getElementById('pc-id').value = ex.id; }
   else { setval('pc-label',''); setval('pc-body',''); document.getElementById('pc-id').value = ''; }
-});
+}
+document.getElementById('pc-slot').addEventListener('change', pcPrefill);
+document.getElementById('pc-au').addEventListener('change', pcPrefill);
 // 종류가 '단색'일 때만 색상 선택기를 보이고, '사진'일 때만 블러 슬라이더/파일 업로드를 보임
 // 정렬 순서 숫자 입력칸은 숨기고, 목록을 끌어서 순서를 정합니다
 document.querySelectorAll('input[id$="-order"]').forEach(i=>{ const f = i.closest('.field'); if(f) f.hidden = true; });

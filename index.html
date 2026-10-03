@@ -1121,17 +1121,22 @@ updateTodayDate();
 // ══════════════════════════════════════
 let PROFILES = [];
 // 프로필 아래 공통 설명 2칸 (관리자 > 프로필 > 공통 설명 영역): category = summary|intro, title = 라벨, body = 내용
-async function loadProfileCommon(){
+let PC_ROWS = [], PC_LABEL = null;
+// AU 라벨별 설명: au_label이 같은 항목을 보여주고, 그 AU에 없으면 라벨을 비워 저장한 "공통(모든 AU)" 항목을 보여줌
+function renderProfileCommon(label){
+  PC_LABEL = label;
   const box = document.getElementById('profileCommon');
-  try{
-    const rows = await dbSelect('profile_common');
-    const defs = { summary:'요약', intro:'소개' };
-    box.innerHTML = ['summary','intro'].map(k=>{
-      const r = rows.find(x=>x.category===k);
-      if(!r || !(r.body||'').trim()) return '';
-      return `<div class="pc-block"><span class="pc-label">${escapeHtml((r.title||'').trim() || defs[k])}</span><div class="pc-text">${escapeHtml(r.body)}</div></div>`;
-    }).join('');
-  }catch(e){ box.innerHTML = ''; }
+  const cur = label || '기본';
+  const defs = { summary:'요약', intro:'소개' };
+  box.innerHTML = ['summary','intro'].map(k=>{
+    const r = PC_ROWS.find(x=>x.category===k && (x.au_label||'').trim()===cur) || PC_ROWS.find(x=>x.category===k && !(x.au_label||'').trim());
+    if(!r || !(r.body||'').trim()) return '';
+    return `<div class="pc-block"><span class="pc-label">${escapeHtml((r.title||'').trim() || defs[k])}</span><div class="pc-text">${escapeHtml(r.body)}</div></div>`;
+  }).join('');
+}
+async function loadProfileCommon(){
+  try{ PC_ROWS = await dbSelect('profile_common'); }catch(e){ PC_ROWS = []; }
+  renderProfileCommon(PC_LABEL);
 }
 // 메인 프로필 카드 사진 (관리자 > 메인 화면 이미지 > ⑤ 메인 프로필 사진) — 프로필 메뉴와는 별개
 async function loadMainProfile(){
@@ -1171,6 +1176,7 @@ function renderAuTabs(){
   renderProfileCards(labels[0]);
 }
 function renderProfileCards(label){
+  renderProfileCommon(label);
   const wrap = document.getElementById('profileCards');
   const list = label === null ? [] : PROFILES.filter(p=>(p.au_label||'기본')===label);
   if(!list.length){
