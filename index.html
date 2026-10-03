@@ -255,6 +255,7 @@ body{
   background:var(--paper-dim);
   min-height:260px;
 }
+.main-image-frame.has-img{ background-color:transparent; border-color:transparent; }
 .main-image-frame img{ width:100%; display:block; }
 .main-image-frame .placeholder{
   display:flex; align-items:center; justify-content:center;
@@ -748,6 +749,7 @@ let hasMainImg = false, hasFrameBg = false;
 function updatePlaceholder(){
   // 메인 이미지나 스티커 영역 배경이 하나라도 있으면 안내 문구를 숨김
   document.getElementById('mainImagePlaceholder').style.display = (hasMainImg || hasFrameBg) ? 'none' : 'flex';
+  document.getElementById('mainImageFrame').classList.toggle('has-img', hasMainImg || hasFrameBg);
 }
 async function loadMainImage(){
   try{
