@@ -272,7 +272,12 @@ body{
   height:260px; color:var(--ink-soft); font-size:12px;
 }
 
-.today-date{ margin-top:12px; font-size:12px; color:var(--ink-soft); }
+.today-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:12px; font-size:12px; color:var(--ink-soft); }
+.today-row .today-date{ margin:0; white-space:nowrap; text-align:right; }
+.weather-widget{ display:flex; align-items:center; gap:6px; min-width:0; white-space:nowrap; }
+.weather-widget .w-icon{ font-size:15px; line-height:1; }
+.weather-widget .w-temp{ font-weight:700; color:var(--ink); }
+.weather-widget .w-desc{ overflow:hidden; text-overflow:ellipsis; }
 
 .sticker-layer{ position:absolute; inset:0; z-index:5; pointer-events:none; overflow:hidden; }
 .sticker-item{ position:absolute; }
@@ -573,7 +578,12 @@ body{
             <img id="mainImageEl" alt="" style="display:none;">
             <div class="sticker-layer" id="stickerLayer"></div>
           </div>
-          <div class="today-date"><span data-t="today_label">Today</span> <span id="todayDate"></span></div>
+          <div class="today-row">
+            <div class="weather-widget" id="weatherWidget" hidden>
+              <span class="w-icon" id="weatherIcon"></span><span class="w-temp" id="weatherTemp"></span><span class="w-desc" id="weatherDesc"></span>
+            </div>
+            <div class="today-date"><span data-t="today_label">Today</span> <span id="todayDate"></span></div>
+          </div>
         </div>
 
         <div class="content-section" data-content="profile">
@@ -1002,6 +1012,28 @@ function updateTodayDate(){
   document.getElementById('todayDate').textContent = s;
 }
 updateTodayDate();
+
+// 날씨 위젯 (Open-Meteo 무료 API, 키 불필요). 위치를 바꾸려면 아래 위도/경도/이름을 수정하세요
+const WEATHER_LOC = { name:'서울', lat:37.5665, lon:126.9780 };
+const WEATHER_CODES = [
+  [[0],'☀️','맑음'], [[1],'🌤️','대체로 맑음'], [[2],'⛅','구름 조금'], [[3],'☁️','흐림'],
+  [[45,48],'🌫️','안개'], [[51,53,55,56,57],'🌦️','이슬비'], [[61,63,65,66,67,80,81,82],'🌧️','비'],
+  [[71,73,75,77,85,86],'❄️','눈'], [[95,96,99],'⛈️','천둥번개']
+];
+async function loadWeather(){
+  try{
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_LOC.lat}&longitude=${WEATHER_LOC.lon}&current=temperature_2m,weather_code&timezone=auto`);
+    if(!r.ok) throw new Error(r.status);
+    const c = (await r.json()).current;
+    const w = WEATHER_CODES.find(x=>x[0].includes(c.weather_code)) || [[], '🌡️', ''];
+    document.getElementById('weatherIcon').textContent = w[1];
+    document.getElementById('weatherTemp').textContent = Math.round(c.temperature_2m) + '°C';
+    document.getElementById('weatherDesc').textContent = WEATHER_LOC.name + (w[2] ? ' · ' + w[2] : '');
+    document.getElementById('weatherWidget').hidden = false;
+  }catch(e){ document.getElementById('weatherWidget').hidden = true; }
+}
+loadWeather();
+setInterval(loadWeather, 30*60*1000);
 
 // ══════════════════════════════════════
 //  프로필
