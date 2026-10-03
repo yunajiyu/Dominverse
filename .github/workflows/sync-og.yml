@@ -1,0 +1,34 @@
+name: Sync OG
+
+# 관리자에서 저장한 링크 미리보기(OG) 설정을 index.html 에 반영합니다.
+# 매시간 자동 실행되고, Actions 탭에서 "Run workflow"로 바로 실행할 수도 있습니다.
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/sync-og.js
+      - name: Commit if changed
+        run: |
+          if git diff --quiet; then
+            echo "변경 없음"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add index.html
+            git commit -m "chore: sync OG meta from admin settings"
+            git push
+          fi
