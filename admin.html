@@ -455,7 +455,7 @@ body{
             <label>이미지 URL (투명 PNG, 또는 파일 선택)</label>
             <input id="sk-image" placeholder="https://...">
             <div class="upload-row">
-              <input type="file" id="sk-file" accept="image/*">
+              <input type="file" id="sk-file" accept="image/*" multiple>
               <span class="upload-status" id="sk-file-status"></span>
             </div>
           </div>
@@ -480,6 +480,7 @@ body{
           <div class="field full">
             <label>눈 깜빡임 프레임 이미지 (선택 · 한 줄에 URL 하나). 평소엔 위의 기본 이미지가 보이고, 몇 초에 한 번 여기 올린 이미지가 순서대로 잠깐 보였다가 돌아와요. 모두 같은 크기로 만들어 주세요</label>
             <textarea id="sk-walk" rows="3" placeholder="https://... (한 줄에 하나)"></textarea>
+            <div id="sk-walk-preview" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;"></div>
             <div class="upload-row">
               <input type="file" id="sk-walk-file" accept="image/*" multiple>
               <span class="upload-status" id="sk-walk-status">여러 장을 한 번에 선택하면 위 칸에 자동으로 추가됩니다</span>
@@ -860,7 +861,6 @@ function wireFileUpload(fileInputId, targetInputId, statusId, prefix){
 }
 wireFileUpload('pf-file', 'pf-image', 'pf-file-status', 'profile');
 wireFileUpload('gl-file', 'gl-image', 'gl-file-status', 'gallery');
-wireFileUpload('sk-file', 'sk-image', 'sk-file-status', 'sticker');
 wireFileUpload('pg-file', 'pg-value', 'pg-file-status', 'bg');
 wireFileUpload('sb-file', 'sb-value', 'sb-file-status', 'stickerbg');
 wireFileUpload('sf-file', 'sf-url', 'sf-file-status', 'font');
@@ -883,24 +883,37 @@ wireFileUpload('mt-file', 'mt-image', 'mt-file-status', 'thumb');
     f.value = '';
   });
 })();
-(function(){
-  const f = document.getElementById('sk-walk-file'); if(!f) return;
-  f.addEventListener('change', async ()=>{
-    const files = [...f.files]; if(!files.length) return;
-    const st = document.getElementById('sk-walk-status'); const ta = document.getElementById('sk-walk');
-    let done = 0;
-    try{
-      for(const file of files){
-        st.textContent = '업로드 중… ('+(done+1)+'/'+files.length+')';
-        const url = await uploadToStorage(file, 'sticker');
+// 스티커 이미지 업로드: 기본 이미지 칸에서 여러 장을 고르면 첫 장은 기본 이미지, 나머지는 깜빡임 프레임으로 들어갑니다
+let skUploading = 0;
+function renderSkWalkPreview(){
+  const box = document.getElementById('sk-walk-preview'); if(!box) return;
+  const urls = document.getElementById('sk-walk').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  box.innerHTML = urls.map((u,i)=>`<img src="${escapeHtml(u)}" alt="" title="프레임 ${i+1}" style="height:44px;border:1px solid var(--line);border-radius:6px;background:#fff;">`).join('');
+}
+document.getElementById('sk-walk').addEventListener('input', renderSkWalkPreview);
+async function skUploadFiles(files, firstToBase, statusId){
+  files = [...files]; if(!files.length) return;
+  const st = document.getElementById(statusId), ta = document.getElementById('sk-walk');
+  let done = 0; skUploading++;
+  try{
+    for(const file of files){
+      st.textContent = '업로드 중… ('+(done+1)+'/'+files.length+')';
+      const url = await uploadToStorage(file, 'sticker');
+      if(firstToBase && done === 0){
+        document.getElementById('sk-image').value = url;
+        document.getElementById('sk-image').dispatchEvent(new Event('input'));
+      } else {
         ta.value = (ta.value.trim() ? ta.value.replace(/\s+$/,'') + '\n' : '') + url;
-        done++;
+        renderSkWalkPreview();
       }
-      st.textContent = done + '장 업로드 완료';
-    }catch(e){ st.textContent = '오류: ' + e.message + ' (' + done + '장 완료)'; }
-    f.value = '';
-  });
-})();
+      done++;
+    }
+    st.textContent = done + '장 업로드 완료' + (firstToBase && done>1 ? ' (첫 장은 기본 이미지, 나머지는 깜빡임 프레임)' : '');
+  }catch(e){ st.textContent = '오류: ' + e.message + ' (' + done + '장 완료)'; }
+  finally{ skUploading--; }
+}
+document.getElementById('sk-file').addEventListener('change', e=>{ const f = e.target; skUploadFiles(f.files, true, 'sk-file-status').then(()=>{ f.value=''; }); });
+document.getElementById('sk-walk-file').addEventListener('change', e=>{ const f = e.target; skUploadFiles(f.files, false, 'sk-walk-status').then(()=>{ f.value=''; }); });
 wireFileUpload('mp-file', 'mp-image', 'mp-file-status', 'mainprofile');
 wireFileUpload('ld-file', 'ld-image', 'ld-file-status', 'loading');
 wireFileUpload('bg-file', 'bg-image', 'bg-file-status', 'bgm');
@@ -995,6 +1008,7 @@ const SECTIONS = {
       setval('sk-image',it.image_url); setval('sk-x',it.x_pos); setval('sk-y',it.y_pos);
       setval('sk-width',it.width_px); setval('sk-rotation',it.rotation); setval('sk-order',it.sort_order);
       setval('sk-walk',it.body);
+      renderSkWalkPreview();
     },
     idEl:'sk-id', statusEl:'sk-status', titleEl:'sk-form-title',
     render: (it)=>{ const n = String(it.body||'').split(/\r?\n/).filter(x=>x.trim()).length; return renderRow(it, '스티커', `X ${it.x_pos}% · Y ${it.y_pos}% · ${it.width_px}px · ${it.rotation}°` + (n ? ` · 깜빡임 ${n}프레임` : '')); }
@@ -1262,6 +1276,7 @@ async function loadSection(section){
 
 async function submitItem(section){
   const cfg = SECTIONS[section];
+  if(section==='sticker' && skUploading){ document.getElementById('sk-status').textContent = '이미지 업로드가 끝난 뒤 저장해 주세요.'; return; }
   const idEl = document.getElementById(cfg.idEl);
   const statusEl = document.getElementById(cfg.statusEl);
   const row = { section, ...cfg.read() };
@@ -1322,6 +1337,7 @@ function resetForm(section){
   updateColorRows();
   if(section==='sticker'){
     setval('sk-x',50); setval('sk-y',50);
+    renderSkWalkPreview();
     updateSkMarkerFromFields(); updateSkMarkerImage();
   }
   if(section==='site_font'){
