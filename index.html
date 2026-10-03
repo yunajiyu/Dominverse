@@ -274,10 +274,63 @@ body{
 
 .today-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:12px; font-size:12px; color:var(--ink-soft); }
 .today-row .today-date{ margin:0; white-space:nowrap; text-align:right; }
-.weather-widget{ display:flex; align-items:center; gap:6px; min-width:0; white-space:nowrap; }
-.weather-widget .w-icon{ font-size:15px; line-height:1; }
-.weather-widget .w-temp{ font-weight:700; color:var(--ink); }
-.weather-widget .w-desc{ overflow:hidden; text-overflow:ellipsis; }
+.weather-widget{
+  position:relative; flex:0 1 300px; min-width:0; height:68px; overflow:hidden;
+  border-radius:12px; color:#173a5e; border:1px solid rgba(255,255,255,.7);
+  background:linear-gradient(180deg,#9fd4f5 0%,#e4f4ff 100%);
+  box-shadow:0 2px 8px -4px rgba(30,80,130,.35);
+}
+.weather-widget[hidden]{ display:none; }
+.w-bg{ position:absolute; inset:0; overflow:hidden; pointer-events:none; }
+.w-body{
+  position:relative; z-index:1; height:100%; padding:0 14px;
+  display:flex; align-items:center; gap:10px; white-space:nowrap;
+}
+.w-icon{ font-size:26px; line-height:1; }
+.w-main{ display:flex; flex-direction:column; min-width:0; }
+.w-temp{ font-size:20px; font-weight:700; line-height:1.1; letter-spacing:.01em; }
+.w-desc{ font-size:10.5px; opacity:.75; overflow:hidden; text-overflow:ellipsis; }
+.w-sub{ margin-left:auto; padding-left:10px; border-left:1px solid rgba(23,58,94,.25); font-size:10.5px; line-height:1.6; opacity:.85; }
+/* 하늘 종류별 배경 */
+.weather-widget[data-sky="cloud"]{ background:linear-gradient(180deg,#b3c2d3 0%,#e6ebf1 100%); }
+.weather-widget[data-sky="rain"], .weather-widget[data-sky="storm"]{ background:linear-gradient(180deg,#7488a1 0%,#b7c3d1 100%); color:#fff; }
+.weather-widget[data-sky="rain"] .w-sub, .weather-widget[data-sky="storm"] .w-sub{ border-color:rgba(255,255,255,.4); }
+.weather-widget[data-sky="snow"]{ background:linear-gradient(180deg,#c6dbee 0%,#f5f9fd 100%); }
+.weather-widget[data-sky="fog"]{ background:linear-gradient(180deg,#c7cdd3 0%,#eceff1 100%); }
+.weather-widget[data-night="1"]{ background:linear-gradient(180deg,#1d2848 0%,#44537d 100%); color:#fff; }
+.weather-widget[data-night="1"] .w-sub{ border-color:rgba(255,255,255,.35); }
+/* 구름 */
+.w-cloud{ position:absolute; width:46px; height:14px; background:#fff; border-radius:14px; opacity:.9; animation:wDrift 24s linear infinite; }
+.w-cloud::before, .w-cloud::after{ content:''; position:absolute; background:#fff; border-radius:50%; }
+.w-cloud::before{ width:20px; height:20px; left:7px; top:-10px; }
+.w-cloud::after{ width:26px; height:26px; left:20px; top:-15px; }
+.w-cloud.c1{ top:8px; left:0; animation-duration:26s; }
+.w-cloud.c2{ top:34px; left:0; transform:scale(.7); animation-duration:34s; animation-delay:-14s; opacity:.75; }
+.w-cloud.c3{ top:18px; left:0; transform:scale(.55); animation-duration:42s; animation-delay:-28s; opacity:.6; }
+@keyframes wDrift{ from{ margin-left:-60px; } to{ margin-left:330px; } }
+.weather-widget[data-sky="cloud"] .w-cloud, .weather-widget[data-sky="rain"] .w-cloud, .weather-widget[data-sky="storm"] .w-cloud{ background:#dfe5ec; }
+.weather-widget[data-sky="cloud"] .w-cloud::before, .weather-widget[data-sky="cloud"] .w-cloud::after,
+.weather-widget[data-sky="rain"] .w-cloud::before, .weather-widget[data-sky="rain"] .w-cloud::after,
+.weather-widget[data-sky="storm"] .w-cloud::before, .weather-widget[data-sky="storm"] .w-cloud::after{ background:#dfe5ec; }
+.weather-widget[data-sky="rain"] .w-cloud, .weather-widget[data-sky="storm"] .w-cloud{ filter:brightness(.82); }
+.weather-widget[data-night="1"] .w-cloud{ opacity:.25; }
+/* 무지개 (맑음/구름 조금, 낮) */
+.w-rainbow{
+  position:absolute; right:26px; bottom:-52px; width:104px; height:104px; border-radius:50%;
+  box-shadow:0 0 0 4px rgba(255,120,120,.38), 0 0 0 8px rgba(255,200,110,.38), 0 0 0 12px rgba(255,245,130,.38),
+             0 0 0 16px rgba(140,215,150,.38), 0 0 0 20px rgba(130,190,255,.38), 0 0 0 24px rgba(190,150,240,.38);
+  opacity:0; animation:wFade 6s ease-in-out infinite alternate;
+}
+.weather-widget[data-rainbow="1"] .w-rainbow{ opacity:1; }
+@keyframes wFade{ from{ transform:translateY(2px); } to{ transform:translateY(-2px); } }
+/* 비 / 눈 / 별 */
+.w-drop{ position:absolute; top:-12px; width:1.5px; height:10px; background:rgba(255,255,255,.75); transform:rotate(12deg); animation:wRain .8s linear infinite; }
+@keyframes wRain{ to{ transform:translate(-8px,90px) rotate(12deg); } }
+.w-flake{ position:absolute; top:-6px; width:4px; height:4px; border-radius:50%; background:#fff; box-shadow:0 0 3px rgba(120,160,200,.7); animation:wSnow 5s linear infinite; }
+@keyframes wSnow{ to{ transform:translate(10px,80px); } }
+.w-star{ position:absolute; width:2px; height:2px; border-radius:50%; background:#fff; animation:wTwinkle 2.4s ease-in-out infinite; }
+@keyframes wTwinkle{ 0%,100%{ opacity:.2; } 50%{ opacity:1; } }
+@media (prefers-reduced-motion:reduce){ .w-cloud, .w-rainbow, .w-drop, .w-flake, .w-star{ animation:none; } .w-cloud.c1{ margin-left:30px; } .w-cloud.c2{ margin-left:180px; } .w-cloud.c3{ margin-left:110px; } }
 
 .sticker-layer{ position:absolute; inset:0; z-index:5; pointer-events:none; overflow:hidden; }
 .sticker-item{ position:absolute; }
@@ -471,6 +524,9 @@ body{
 .mobile-tabbar{ display:none; }
 @media (max-width:400px){
   body{ padding:36px 12px 60px; }
+  .today-row{ flex-wrap:wrap; }
+  .weather-widget{ flex:1 1 100%; }   /* 모바일: 날씨 카드는 한 줄 전체, 날짜는 그 아래 오른쪽 */
+  .today-row .today-date{ margin-left:auto; }
   .site-row{ flex-direction:column; padding-top:52px; }
   .side-col{ position:static; width:100%; margin-bottom:0; order:-1; }
   .book-wrap{ height:auto; }
@@ -580,7 +636,12 @@ body{
           </div>
           <div class="today-row">
             <div class="weather-widget" id="weatherWidget" hidden>
-              <span class="w-icon" id="weatherIcon"></span><span class="w-temp" id="weatherTemp"></span><span class="w-desc" id="weatherDesc"></span>
+              <div class="w-bg" id="weatherBg"><span class="w-rainbow"></span><span class="w-cloud c1"></span><span class="w-cloud c2"></span><span class="w-cloud c3"></span></div>
+              <div class="w-body">
+                <span class="w-icon" id="weatherIcon"></span>
+                <span class="w-main"><span class="w-temp" id="weatherTemp"></span><span class="w-desc" id="weatherDesc"></span></span>
+                <span class="w-sub"><span id="weatherHum"></span><br><span id="weatherWind"></span></span>
+              </div>
             </div>
             <div class="today-date"><span data-t="today_label">Today</span> <span id="todayDate"></span></div>
           </div>
@@ -1015,21 +1076,36 @@ updateTodayDate();
 
 // 날씨 위젯 (Open-Meteo 무료 API, 키 불필요). 위치를 바꾸려면 아래 위도/경도/이름을 수정하세요
 const WEATHER_LOC = { name:'서울', lat:37.5665, lon:126.9780 };
-const WEATHER_CODES = [
-  [[0],'☀️','맑음'], [[1],'🌤️','대체로 맑음'], [[2],'⛅','구름 조금'], [[3],'☁️','흐림'],
-  [[45,48],'🌫️','안개'], [[51,53,55,56,57],'🌦️','이슬비'], [[61,63,65,66,67,80,81,82],'🌧️','비'],
-  [[71,73,75,77,85,86],'❄️','눈'], [[95,96,99],'⛈️','천둥번개']
+const WEATHER_CODES = [   // [코드들, 아이콘, 설명, 하늘 종류]
+  [[0],'☀️','맑음','clear'], [[1],'🌤️','대체로 맑음','clear'], [[2],'⛅','구름 조금','clear'], [[3],'☁️','흐림','cloud'],
+  [[45,48],'🌫️','안개','fog'], [[51,53,55,56,57],'🌦️','이슬비','rain'], [[61,63,65,66,67,80,81,82],'🌧️','비','rain'],
+  [[71,73,75,77,85,86],'❄️','눈','snow'], [[95,96,99],'⛈️','천둥번개','storm']
 ];
+function weatherParticles(sky, night){
+  const bg = document.getElementById('weatherBg');
+  bg.querySelectorAll('.w-drop,.w-flake,.w-star').forEach(e=>e.remove());
+  const add = (cls, n, fn)=>{ for(let i=0;i<n;i++){ const e = document.createElement('span'); e.className = cls; fn(e,i); bg.appendChild(e); } };
+  if(sky === 'rain' || sky === 'storm') add('w-drop', 16, e=>{ e.style.left = Math.random()*105+'%'; e.style.animationDelay = (-Math.random()*.8)+'s'; e.style.animationDuration = (.6+Math.random()*.4)+'s'; });
+  if(sky === 'snow') add('w-flake', 14, e=>{ e.style.left = Math.random()*100+'%'; e.style.animationDelay = (-Math.random()*5)+'s'; e.style.animationDuration = (4+Math.random()*3)+'s'; });
+  if(night && (sky === 'clear' || sky === 'cloud')) add('w-star', 14, e=>{ e.style.left = Math.random()*100+'%'; e.style.top = Math.random()*70+'%'; e.style.animationDelay = (-Math.random()*2.4)+'s'; });
+}
 async function loadWeather(){
   try{
-    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_LOC.lat}&longitude=${WEATHER_LOC.lon}&current=temperature_2m,weather_code&timezone=auto`);
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${WEATHER_LOC.lat}&longitude=${WEATHER_LOC.lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,is_day&wind_speed_unit=ms&timezone=auto`);
     if(!r.ok) throw new Error(r.status);
     const c = (await r.json()).current;
-    const w = WEATHER_CODES.find(x=>x[0].includes(c.weather_code)) || [[], '🌡️', ''];
-    document.getElementById('weatherIcon').textContent = w[1];
+    const w = WEATHER_CODES.find(x=>x[0].includes(c.weather_code)) || [[], '🌡️', '', 'cloud'];
+    const night = c.is_day === 0;
+    const el = document.getElementById('weatherWidget');
+    el.dataset.sky = w[3]; el.dataset.night = night ? '1' : '';
+    el.dataset.rainbow = (!night && w[3] === 'clear' && c.weather_code >= 1) ? '1' : '';
+    weatherParticles(w[3], night);
+    document.getElementById('weatherIcon').textContent = night && c.weather_code <= 2 ? '🌙' : w[1];
     document.getElementById('weatherTemp').textContent = Math.round(c.temperature_2m) + '°C';
     document.getElementById('weatherDesc').textContent = WEATHER_LOC.name + (w[2] ? ' · ' + w[2] : '');
-    document.getElementById('weatherWidget').hidden = false;
+    document.getElementById('weatherHum').textContent = '습도 ' + Math.round(c.relative_humidity_2m) + '%';
+    document.getElementById('weatherWind').textContent = '바람 ' + (Math.round(c.wind_speed_10m*10)/10) + 'm/s';
+    el.hidden = false;
   }catch(e){ document.getElementById('weatherWidget').hidden = true; }
 }
 loadWeather();
