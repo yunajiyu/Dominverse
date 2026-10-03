@@ -488,6 +488,11 @@ body{
           </div>
         </div>
         <div class="field-row">
+          <div class="field full">
+            <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="sk-auto" style="width:auto;"> 자동 겹침 — 발 위치 기준으로 아래쪽에 있는 스티커가 앞에 보여요 (걸어다니는 캐릭터끼리 만날 때 추천 · 켠 스티커는 아래 겹침 깊이 대신 이 규칙을 따르고, 일반 스티커보다 앞에 보여요)</label>
+          </div>
+        </div>
+        <div class="field-row">
           <div class="field"><label>겹침 깊이 (숫자가 클수록 앞에 보여요 · 목록의 ▲▼ 버튼이나 끌어서 바꿔도 돼요)</label><input id="sk-order" type="number" value="0"></div>
         </div>
         <div class="form-actions">
@@ -997,21 +1002,22 @@ const SECTIONS = {
     render: (it)=>{ const n = (it.image_url?1:0) + String(it.body||'').split(/\r?\n/).filter(x=>x.trim()).length; return renderRow(it, (it.title || '(제목 없음)') + (n>1 ? '  ['+n+'장 묶음]' : ''), '', it.category); }
   },
   sticker:{
-    fields:['image_url','x_pos','y_pos','width_px','rotation','sort_order','body'],
+    fields:['image_url','x_pos','y_pos','width_px','rotation','sort_order','body','category'],
     // 걷기 프레임 URL들은 body 칸에 줄바꿈으로 저장 (DB 열 추가 불필요)
     read: ()=>({
       image_url: val('sk-image'), x_pos: numval('sk-x'), y_pos: numval('sk-y'),
       width_px: numval('sk-width'), rotation: numval('sk-rotation'), sort_order: numval('sk-order'),
-      body: val('sk-walk')
+      body: val('sk-walk'), category: document.getElementById('sk-auto').checked ? 'auto' : ''
     }),
     fill: (it)=>{
       setval('sk-image',it.image_url); setval('sk-x',it.x_pos); setval('sk-y',it.y_pos);
       setval('sk-width',it.width_px); setval('sk-rotation',it.rotation); setval('sk-order',it.sort_order);
       setval('sk-walk',it.body);
       renderSkWalkPreview();
+      document.getElementById('sk-auto').checked = it.category === 'auto';
     },
     idEl:'sk-id', statusEl:'sk-status', titleEl:'sk-form-title',
-    render: (it)=>{ const n = String(it.body||'').split(/\r?\n/).filter(x=>x.trim()).length; const row = renderRow(it, '스티커', `X ${it.x_pos}% · Y ${it.y_pos}% · ${it.width_px}px · ${it.rotation}° · 깊이 ${it.sort_order||0}` + (n ? ` · 깜빡임 ${n}프레임` : ''));
+    render: (it)=>{ const n = String(it.body||'').split(/\r?\n/).filter(x=>x.trim()).length; const row = renderRow(it, '스티커', `X ${it.x_pos}% · Y ${it.y_pos}% · ${it.width_px}px · ${it.rotation}° · ${it.category==='auto' ? '자동 겹침' : '깊이 ' + (it.sort_order||0)}` + (n ? ` · 깜빡임 ${n}프레임` : ''));
       return row.replace('<div class="item-actions">', `<div class="item-actions"><button title="다른 스티커 앞으로" onclick="moveSticker(${it.id}, 1)">▲ 앞으로</button><button title="다른 스티커 뒤로" onclick="moveSticker(${it.id}, -1)">▼ 뒤로</button>`); }
   },
   page_bg:{
@@ -1349,6 +1355,7 @@ function resetForm(section){
   updateColorRows();
   if(section==='sticker'){
     setval('sk-x',50); setval('sk-y',50);
+    document.getElementById('sk-auto').checked = false;
     renderSkWalkPreview();
     updateSkMarkerFromFields(); updateSkMarkerImage();
   }
