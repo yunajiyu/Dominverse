@@ -1123,15 +1123,19 @@ let PROFILES = [];
 // 프로필 아래 공통 설명 2칸 (관리자 > 프로필 > 공통 설명 영역): category = summary|intro, title = 라벨, body = 내용
 let PC_ROWS = [], PC_LABEL = null;
 // AU 라벨별 설명: au_label이 같은 항목을 보여주고, 그 AU에 없으면 라벨을 비워 저장한 "공통(모든 AU)" 항목을 보여줌
+function pcNum(cat){ return cat === 'summary' ? 1 : cat === 'intro' ? 2 : (parseInt(String(cat||'').replace('slot',''), 10) || 0); }
 function renderProfileCommon(label){
   PC_LABEL = label;
   const box = document.getElementById('profileCommon');
   const cur = label || '기본';
-  const defs = { summary:'요약', intro:'소개' };
-  box.innerHTML = ['summary','intro'].map(k=>{
-    const r = PC_ROWS.find(x=>x.category===k && (x.au_label||'').trim()===cur) || PC_ROWS.find(x=>x.category===k && !(x.au_label||'').trim());
+  const defs = { 1:'요약', 2:'소개' };
+  const nums = [...new Set(PC_ROWS.map(x=>pcNum(x.category)).filter(n=>n>0))].sort((a,b)=>a-b);
+  box.innerHTML = nums.map(n=>{
+    const rows = PC_ROWS.filter(x=>pcNum(x.category)===n);
+    const r = rows.find(x=>(x.au_label||'').trim()===cur) || rows.find(x=>!(x.au_label||'').trim());
     if(!r || !(r.body||'').trim()) return '';
-    return `<div class="pc-block"><span class="pc-label">${escapeHtml((r.title||'').trim() || defs[k])}</span><div class="pc-text">${escapeHtml(r.body)}</div></div>`;
+    const lab = (r.title||'').trim() || defs[n] || '';
+    return `<div class="pc-block">${lab ? `<span class="pc-label">${escapeHtml(lab)}</span>` : ''}<div class="pc-text">${escapeHtml(r.body)}</div></div>`;
   }).join('');
 }
 async function loadProfileCommon(){
