@@ -478,13 +478,13 @@ body{
   .book-content{ padding:0; }
   /* 모바일 메인: menu 라벨 → 바인더 고리가 달린 2×2 메뉴 → 스티커 영역 → 날짜(왼쪽) */
   .top-bar{ display:none; }   /* 모바일에서는 상단 영역(카운터·제목·주소)을 없앰 */
-  .content-top{ display:block; border-bottom:none; margin-bottom:24px; padding-bottom:0; }
+  .content-top{ display:block; border-bottom:none; margin-bottom:14px; padding-bottom:0; position:relative; z-index:2; }
   .menu-cards{
     position:relative; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:none; grid-auto-rows:64px; gap:8px;
     width:auto; height:auto; padding:12px; border:1px solid var(--line); border-radius:16px; background:var(--paper);
   }
   .menu-cards::before, .menu-cards::after{
-    content:''; position:absolute; bottom:-14px; width:10px; height:28px; z-index:2;
+    content:''; position:absolute; bottom:-24px; width:10px; height:38px; z-index:3;   /* 아래 스티커 영역과 살짝 겹치도록 길게 */
     border-radius:6px; background:var(--paper-dim); border:1px solid var(--line);
   }
   .menu-cards::before{ left:22px; }
