@@ -796,7 +796,50 @@ async function loadStickers(){
         <span class="resize-handle"></span>
       </span>`;
     }).join('');
+    startWander();
   }catch(e){ /* 무시 */ }
+}
+
+// 스티커가 등록된 위치 주변을 천천히 걸어다니는 효과 (잡고 끌면 멈췄다가, 놓은 자리에서 다시 시작)
+let wanderRaf = 0;
+function startWander(){
+  cancelAnimationFrame(wanderRaf);
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const layer = document.getElementById('stickerLayer');
+  const rand = (a,b)=>a + Math.random()*(b-a);
+  const states = [...layer.querySelectorAll('.sticker-item')].map(el=>{
+    const x = parseFloat(el.style.left), y = parseFloat(el.style.top);
+    return { el, img:el.querySelector('img'), x, y, hx:x, hy:y, tx:null, ty:null, wait:rand(.5,2.5), phase:rand(0,6), synced:true };
+  });
+  let last = performance.now();
+  function tick(now){
+    const dt = Math.min(.05, (now-last)/1000); last = now;
+    const W = layer.clientWidth, H = layer.clientHeight;
+    if(W && H) states.forEach(st=>{
+      const el = st.el;
+      if(el.dataset.drag){ st.synced = false; return; }
+      if(!st.synced){
+        st.x = st.hx = parseFloat(el.style.left)/W*100; st.y = st.hy = parseFloat(el.style.top)/H*100;
+        st.tx = null; st.wait = 1.5; st.synced = true;
+      }
+      const mx = el.offsetWidth/2/W*100, my = el.offsetHeight/2/H*100;
+      const clampX = v=>Math.min(100-mx, Math.max(mx, v)), clampY = v=>Math.min(100-my, Math.max(my, v));
+      let bob = 0;
+      if(st.wait > 0){
+        st.wait -= dt;
+      } else {
+        if(st.tx === null){ st.tx = clampX(st.hx + rand(-25,25)); st.ty = clampY(st.hy + rand(-12,12)); }
+        const dx = (st.tx-st.x)/100*W, dy = (st.ty-st.y)/100*H, dist = Math.hypot(dx,dy);
+        const step = 28*(W/520)*dt;
+        if(dist <= step){ st.x = st.tx; st.y = st.ty; st.tx = null; st.wait = rand(1.5,4); }
+        else { st.x += dx/dist*step/W*100; st.y += dy/dist*step/H*100; st.phase += dt*10; bob = -Math.abs(Math.sin(st.phase))*3; }
+      }
+      el.style.left = st.x + '%'; el.style.top = st.y + '%';
+      st.img.style.transform = bob ? `translateY(${bob.toFixed(1)}px)` : '';
+    });
+    wanderRaf = requestAnimationFrame(tick);
+  }
+  wanderRaf = requestAnimationFrame(tick);
 }
 
 document.getElementById('stickerLayer').addEventListener('mousedown', e=>{
@@ -816,6 +859,7 @@ document.getElementById('stickerLayer').addEventListener('mousedown', e=>{
   const img = e.target.closest('img');
   if(!img) return;
   e.preventDefault();
+  item.dataset.drag = '1';
   const parentRect = item.parentElement.getBoundingClientRect();
   const rect = item.getBoundingClientRect();
   let curLeft = rect.left - parentRect.left + rect.width/2;
@@ -827,7 +871,7 @@ document.getElementById('stickerLayer').addEventListener('mousedown', e=>{
     item.style.left = (curLeft + e.clientX - startX) + 'px';
     item.style.top = (curTop + e.clientY - startY) + 'px';
   }
-  function onUp(){ document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }
+  function onUp(){ delete item.dataset.drag; document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }
   document.addEventListener('mousemove', onMove);
   document.addEventListener('mouseup', onUp);
 });
