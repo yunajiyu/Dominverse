@@ -771,6 +771,7 @@ async function loadStickerBg(){
     const it = items[0];
     hasFrameBg = true; updatePlaceholder();
     const frame = document.getElementById('mainImageFrame');
+    walkMapOn = it.category !== 'color';
     if(it.category === 'color'){
       frame.style.backgroundImage = 'none';
       frame.style.backgroundColor = it.image_url;
@@ -801,6 +802,33 @@ async function loadStickers(){
 }
 
 // 스티커가 등록된 위치 주변을 천천히 걸어다니는 효과 (잡고 끌면 멈췄다가, 놓은 자리에서 다시 시작)
+// 걸어다닐 수 있는 바닥 영역 (방 이미지 1716×917 기준 좌표). 발 위치가 바닥 안에 있고 가구/문 영역 밖일 때만 이동
+const WALK_MAP = {
+  w:1716, h:917, pad:10,
+  floor:{ x1:65, y1:240, x2:1650, y2:795 },
+  blocks:[
+    [78,230,180,455],     // 왼쪽 책장
+    [195,222,408,588],    // 왼쪽 침대
+    [428,215,705,462],    // 책상+의자
+    [720,232,818,350],    // 협탁
+    [835,172,940,340],    // 큰 화분
+    [1160,222,1440,590],  // 오른쪽 침대
+    [1432,222,1525,418],  // 기타
+    [1540,230,1640,425],  // 오른쪽 책장
+    [78,572,265,772],     // 왼쪽 아래 서랍장
+    [1200,620,1420,765],  // 작은 테이블
+    [1458,580,1620,775],  // 의자
+    [750,735,965,800]     // 문
+  ]
+};
+let walkMapOn = false;   // 스티커 영역 배경이 방 이미지(사진)일 때만 사용
+function walkable(fx, fy, W, H){
+  const m = WALK_MAP, sc = Math.max(W/m.w, H/m.h);
+  const ix = (fx - (W - m.w*sc)/2)/sc, iy = (fy - (H - m.h*sc)/2)/sc;
+  const f = m.floor;
+  if(ix < f.x1 || ix > f.x2 || iy < f.y1 || iy > f.y2) return false;
+  return !m.blocks.some(b=> ix > b[0]-m.pad && ix < b[2]+m.pad && iy > b[1]-m.pad && iy < b[3]+m.pad);
+}
 let wanderRaf = 0;
 function startWander(){
   cancelAnimationFrame(wanderRaf);
@@ -828,7 +856,27 @@ function startWander(){
       if(st.wait > 0){
         st.wait -= dt;
       } else {
-        if(st.tx === null){ st.tx = clampX(st.hx + rand(-25,25)); st.ty = clampY(st.hy + rand(-12,12)); }
+        if(st.tx === null){
+          const fo = el.offsetHeight/2 - 4;   // 중심 → 발 위치 오프셋(px)
+          const px = (X,Y)=>[X/100*W, Y/100*H + fo];
+          const startOk = !walkMapOn || walkable(...px(st.x, st.y), W, H);
+          let found = false;
+          for(let i=0; i<20 && !found; i++){
+            const tx = clampX(st.hx + rand(-30,30)), ty = clampY(st.hy + rand(-25,25));
+            if(walkMapOn){
+              if(!walkable(...px(tx,ty), W, H)) continue;
+              // 가는 길에 가구가 있으면 다른 곳으로 (현재 위치가 이미 막힌 곳이면 길 검사 생략)
+              let clear = true;
+              for(let k=1; k<=12 && clear && startOk; k++){
+                const t = k/12; clear = walkable(...px(st.x+(tx-st.x)*t, st.y+(ty-st.y)*t), W, H);
+              }
+              if(!clear) continue;
+            }
+            st.tx = tx; st.ty = ty; found = true;
+          }
+          if(!found){ st.wait = 1; }
+        }
+        if(st.tx === null) return void(el.style.left = st.x + '%', el.style.top = st.y + '%');
         const dx = (st.tx-st.x)/100*W, dy = (st.ty-st.y)/100*H, dist = Math.hypot(dx,dy);
         const step = 28*(W/520)*dt;
         if(dist <= step){ st.x = st.tx; st.y = st.ty; st.tx = null; st.wait = rand(1.5,4); }
