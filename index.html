@@ -44,6 +44,11 @@ html.dv-boot #dvLoader{ display:grid; }
 body{ transition:opacity .3s ease; }
 
 @font-face{
+  font-family:'RIDIBatang';
+  src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_twelve@1.0/RIDIBatang.woff') format('woff');
+  font-weight:400; font-display:swap;
+}
+@font-face{
   font-family:'SUITE';
   src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2304-2@1.0/SUITE-Regular.woff2') format('woff2');
   font-weight:400; font-display:swap;
@@ -301,13 +306,57 @@ body{
 .profile-card .photo{ width:110px; height:110px; border-radius:10px; background:var(--paper-dim); flex-shrink:0; }
 .profile-stats{ margin-top:10px; font-size:12px; color:var(--ink-soft); display:grid; gap:4px; }
 
-/* 소설 탭 */
-.novel-layout{ display:flex; gap:16px; border:1px solid var(--line); border-radius:12px; padding:16px; background:#fffefb; }
-.ep-list{ width:150px; flex-shrink:0; border-right:1px solid var(--line); padding-right:12px; }
-.ep-item{ padding:8px 6px; border-radius:6px; font-size:12px; cursor:pointer; color:var(--ink-soft); }
-.ep-item.active{ background:var(--paper-dim); color:var(--ink); font-weight:700; }
-.ep-reader{ flex:1; font-size:12.5px; line-height:1.9; color:var(--ink); }
-.ep-reader h3{ font-size:14px; margin-bottom:8px; }
+/* 소설 탭: 장르 필터 칩 + 검색 + 회차 목록 */
+.nv-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+.nv-chip{
+  font:inherit; font-size:13px; font-weight:700; color:var(--ink-soft); cursor:pointer;
+  padding:8px 18px; border-radius:999px; border:1px solid var(--line); background:#fff;
+  transition:background .15s ease, color .15s ease;
+}
+.nv-chip:hover{ background:var(--paper-dim); }
+.nv-chip.active{ background:#636a76; border-color:#636a76; color:#fff; }
+.nv-search{
+  width:100%; font:inherit; font-size:14px; color:var(--ink);
+  padding:13px 16px; border:1px solid var(--line); border-radius:12px; background:#fff; outline:none;
+}
+.nv-search::placeholder{ color:var(--ink-soft); }
+.nv-search:focus{ border-color:var(--accent); }
+.nv-list{ margin-top:10px; }
+.nv-row{
+  display:flex; align-items:center; gap:14px; width:100%; text-align:left; font:inherit; color:var(--ink);
+  padding:16px 8px; border:none; border-radius:10px; background:none; cursor:pointer;
+}
+.nv-row:hover, .nv-row:focus-visible{ background:var(--paper-dim); outline:none; }
+.nv-badge{
+  flex-shrink:0; display:inline-flex; align-items:center; gap:5px; white-space:nowrap;
+  font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px;
+  background:var(--b-bg); color:var(--b-fg);
+}
+.nv-badge::before{ content:''; width:6px; height:6px; border-radius:50%; background:var(--b-fg); }
+.nv-title{ flex:1; min-width:0; font-size:14px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.nv-tag{ flex-shrink:0; font-size:11px; color:var(--ink-soft); white-space:nowrap; }   /* 칩 없이 작은 글씨만 */
+.nv-arrow{ flex-shrink:0; font-size:14px; color:var(--ink-soft); }
+.nv-empty{ padding:28px 8px; text-align:center; font-size:13px; color:var(--ink-soft); }
+.nv-list-view[hidden], .nv-reader-view[hidden]{ display:none; }
+/* 뷰어: 헤더 카드 / 본문 패널(글꼴·크기 도구) / 이전·목록·다음 */
+.nv-head, .nv-foot{ display:flex; align-items:center; gap:12px; padding:14px 18px; border:1px solid var(--line); border-radius:18px; background:#fff; }
+.nv-head{ margin-bottom:12px; flex-wrap:wrap; }
+.nv-back{ font:inherit; font-size:12.5px; font-weight:700; color:var(--ink-soft); background:none; border:none; cursor:pointer; padding:4px 0; }
+.nv-back:hover{ color:var(--ink); }
+.nv-head-title{ flex:1; min-width:0; font-size:16px; font-weight:700; }
+.nv-head-meta{ flex-shrink:0; font-size:11px; color:var(--ink-soft); }
+.nv-body{ position:relative; margin-bottom:12px; padding:52px 22px 24px; border-radius:18px; background:#f7f8fa; border:1px solid #eceef2; }
+.nv-tools{ position:absolute; top:12px; right:12px; display:flex; background:#fff; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.nv-tools button{ font:inherit; font-size:13px; font-weight:700; width:34px; height:30px; color:var(--ink); background:none; border:none; cursor:pointer; }
+.nv-tools button + button{ border-left:1px solid var(--line); }
+.nv-tools button:hover{ background:var(--paper-dim); }
+.ep-reader{ font-size:var(--nv-fs,15px); line-height:1.95; color:var(--ink); word-break:keep-all; overflow-wrap:anywhere; }
+.nv-body.serif .ep-reader{ font-family:'RIDIBatang',serif; }   /* 명조: 리디바탕 (가 버튼을 눌러 실제로 쓰일 때만 내려받음) */
+.nv-foot{ justify-content:space-between; padding:12px 18px; }
+.nv-foot button{ font:inherit; font-size:13px; color:var(--ink-soft); background:none; border:none; cursor:pointer; padding:6px 0; min-width:0; max-width:36%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.nv-foot button:hover:not(:disabled){ color:var(--ink); }
+.nv-foot button:disabled{ opacity:0; cursor:default; }
+.nv-foot #nvToList{ color:var(--ink); font-weight:700; }
 
 /* 그림갤러리 탭 */
 .gallery-tabs{ display:flex; gap:6px; margin-bottom:14px; }
@@ -473,6 +522,8 @@ body{
   .book-rings{ display:none; }
   .profile-col{ display:none; }
   .center-col{ border-radius:0; box-shadow:none; padding:12px; }
+  .nv-row{ gap:10px; padding:14px 4px; }
+  .nv-body{ padding:50px 16px 20px; }
   .book-wrap::before{ display:none; }
   .book-cover{ border-radius:16px; border:1px solid var(--book-border); box-shadow:none; overflow:hidden; }
   .book-content{ padding:0; }
@@ -605,9 +656,26 @@ body{
         </div>
 
         <div class="content-section" data-content="novel">
-          <div class="novel-layout">
-            <div class="ep-list" id="epList"><div class="ep-item active">회차를 불러오는 중…</div></div>
-            <div class="ep-reader" id="epReader"><h3>—</h3><p></p></div>
+          <div class="nv-list-view" id="nvListView">
+            <div class="nv-chips" id="nvChips"></div>
+            <input type="search" class="nv-search" id="nvSearch" autocomplete="off" aria-label="검색">
+            <div class="nv-list" id="nvList"></div>
+          </div>
+          <div class="nv-reader-view" id="nvReaderView" hidden>
+            <div class="nv-head">
+              <button class="nv-back" id="nvBack" type="button">← 뒤로</button>
+              <span class="nv-head-title" id="nvHeadTitle"></span>
+              <span class="nv-head-meta" id="nvHeadMeta"></span>
+            </div>
+            <div class="nv-body" id="nvBody">
+              <div class="nv-tools"><button type="button" id="nvFont" aria-label="글꼴 바꾸기">가</button><button type="button" id="nvSmaller" aria-label="글자 작게">−</button><button type="button" id="nvLarger" aria-label="글자 크게">+</button></div>
+              <div class="ep-reader" id="epReader"></div>
+            </div>
+            <div class="nv-foot">
+              <button type="button" id="nvPrev"></button>
+              <button type="button" id="nvToList">목록</button>
+              <button type="button" id="nvNext"></button>
+            </div>
           </div>
         </div>
 
@@ -1088,29 +1156,88 @@ function renderProfileCards(label){
 //  소설
 // ══════════════════════════════════════
 let NOVELS = [];
+let NV_GENRE = '';     // '' = 전체
+const NV_PALETTE = [['#fff1c2','#d99a00'],['#d3f5e6','#17a37a'],['#dbe8ff','#3b73f0'],['#f1e2ff','#9a4be0'],['#ffe0e6','#e0446a'],['#e4e6ea','#6b7280']];
+function nvGenreOf(n){ return (n.category||'').trim(); }
+function nvGenres(){ return [...new Set(NOVELS.map(nvGenreOf).filter(Boolean))]; }
+let NV_TAG_COLORS = {};   // 관리자에서 지정한 태그 글자색 (section 'novel_tag': category = 태그 문구('*' = 모든 태그), image_url = 색상)
+let NV_COLORS = {};   // 관리자에서 지정한 장르별 배지 색 (section 'novel_genre': category = 장르, image_url = 색상)
+function nvBadge(n){
+  const g = nvGenreOf(n);
+  if(!g) return `<span class="nv-badge" style="--b-bg:#e4e6ea;--b-fg:#6b7280">기타</span>`;   // 장르 미지정: 줄 맞춤용 회색 배지
+  const custom = NV_COLORS[g];
+  if(custom) return `<span class="nv-badge" style="--b-fg:${escapeHtml(custom)};--b-bg:color-mix(in srgb, ${escapeHtml(custom)} 18%, #fff)">${escapeHtml(g)}</span>`;
+  const c = NV_PALETTE[nvGenres().indexOf(g) % NV_PALETTE.length];
+  return `<span class="nv-badge" style="--b-bg:${c[0]};--b-fg:${c[1]}">${escapeHtml(g)}</span>`;
+}
+// 목록 오른쪽 태그: 관리자에서 입력한 태그(예: 3화, 외전, 프롤로그) → 없으면 회차 번호 + '화'
+function nvTag(n){ return (n.summary||'').trim() || (n.episode_no ? n.episode_no+'화' : ''); }
+function nvTagColor(tag){ return NV_TAG_COLORS[tag] || NV_TAG_COLORS['*'] || ''; }
+function nvTitle(n){ return n.title||'제목 미정'; }
+function renderNvChips(){
+  const box = document.getElementById('nvChips');
+  const gs = nvGenres();
+  box.hidden = gs.length < 1;
+  box.innerHTML = [''].concat(gs).map(g=>`<button type="button" class="nv-chip${g===NV_GENRE?' active':''}" data-genre="${escapeHtml(g)}">${escapeHtml(g||t('novel_all','전체'))}</button>`).join('');
+}
+function renderNvList(){
+  const q = document.getElementById('nvSearch').value.trim().toLowerCase();
+  const list = document.getElementById('nvList');
+  if(!NOVELS.length){ list.innerHTML = `<div class="nv-empty">${escapeHtml(t('novel_empty','등록된 회차가 없습니다'))}</div>`; return; }
+  const items = NOVELS.filter(n=>(!NV_GENRE || nvGenreOf(n)===NV_GENRE) && (!q || (n.title||'').toLowerCase().includes(q) || (n.body||'').toLowerCase().includes(q)));
+  list.innerHTML = items.length
+    ? items.map(n=>`<button type="button" class="nv-row" data-id="${n.id}">${nvBadge(n)}<span class="nv-title">${escapeHtml(nvTitle(n))}</span>${nvTag(n)?`<span class="nv-tag"${nvTagColor(nvTag(n))?` style="color:${escapeHtml(nvTagColor(nvTag(n)))}"`:''}>${escapeHtml(nvTag(n))}</span>`:''}<span class="nv-arrow" aria-hidden="true">→</span></button>`).join('')
+    : `<div class="nv-empty">검색 결과가 없습니다</div>`;
+}
+let NV_SEQ = [], NV_CUR = -1, NV_FS = 15;
+try{ const v = parseInt(localStorage.getItem('nvFs'),10); if(v>=12 && v<=24) NV_FS = v; }catch(e){}
+function applyNvFs(){ document.getElementById('nvBody').style.setProperty('--nv-fs', NV_FS+'px'); try{ localStorage.setItem('nvFs', NV_FS); }catch(e){} }
+function showNvReader(n){
+  // 이전/다음은 현재 필터·검색 결과 순서를 따름
+  const q = document.getElementById('nvSearch').value.trim().toLowerCase();
+  NV_SEQ = NOVELS.filter(x=>(!NV_GENRE || nvGenreOf(x)===NV_GENRE) && (!q || (x.title||'').toLowerCase().includes(q) || (x.body||'').toLowerCase().includes(q)));
+  NV_CUR = NV_SEQ.findIndex(x=>x.id===n.id);
+  if(NV_CUR < 0){ NV_SEQ = NOVELS.slice(); NV_CUR = NV_SEQ.findIndex(x=>x.id===n.id); }
+  document.getElementById('nvHeadTitle').textContent = nvTitle(n);
+  document.getElementById('nvHeadMeta').innerHTML = nvBadge(n);
+  document.getElementById('epReader').innerHTML = escapeHtml(n.body||'').replace(/\n/g,'<br>');
+  const pv = NV_SEQ[NV_CUR-1], nx = NV_SEQ[NV_CUR+1];
+  const bp = document.getElementById('nvPrev'), bn = document.getElementById('nvNext');
+  bp.disabled = !pv; bp.textContent = pv ? '‹ '+nvTitle(pv) : '';
+  bn.disabled = !nx; bn.textContent = nx ? nvTitle(nx)+' ›' : '';
+  applyNvFs();
+  document.getElementById('nvListView').hidden = true;
+  document.getElementById('nvReaderView').hidden = false;
+  const sec = document.querySelector('.content-section[data-content="novel"]'); if(sec) sec.scrollTop = 0;
+}
+function showNvList(){
+  document.getElementById('nvReaderView').hidden = true;
+  document.getElementById('nvListView').hidden = false;
+}
+document.getElementById('nvChips').addEventListener('click', e=>{
+  const b = e.target.closest('.nv-chip'); if(!b) return;
+  NV_GENRE = b.dataset.genre; renderNvChips(); renderNvList();
+});
+document.getElementById('nvSearch').addEventListener('input', renderNvList);
+document.getElementById('nvList').addEventListener('click', e=>{
+  const r = e.target.closest('.nv-row'); if(!r) return;
+  const n = NOVELS.find(x=>String(x.id)===r.dataset.id); if(n) showNvReader(n);
+});
+document.getElementById('nvBack').addEventListener('click', showNvList);
+document.getElementById('nvToList').addEventListener('click', showNvList);
+document.getElementById('nvPrev').addEventListener('click', ()=>{ if(NV_SEQ[NV_CUR-1]) showNvReader(NV_SEQ[NV_CUR-1]); });
+document.getElementById('nvNext').addEventListener('click', ()=>{ if(NV_SEQ[NV_CUR+1]) showNvReader(NV_SEQ[NV_CUR+1]); });
+document.getElementById('nvFont').addEventListener('click', ()=>document.getElementById('nvBody').classList.toggle('serif'));
+document.getElementById('nvSmaller').addEventListener('click', ()=>{ NV_FS = Math.max(12, NV_FS-1); applyNvFs(); });
+document.getElementById('nvLarger').addEventListener('click', ()=>{ NV_FS = Math.min(24, NV_FS+1); applyNvFs(); });
 async function loadNovel(){
   await TEXT_READY;
   try{ NOVELS = await dbSelect('novel'); }catch(e){ NOVELS = []; }
+  try{ NV_COLORS = {}; (await dbSelect('novel_genre')).forEach(r=>{ if(r.category && /^#[0-9a-f]{3,8}$/i.test(r.image_url||'')) NV_COLORS[r.category.trim()] = r.image_url.trim(); }); }catch(e){ NV_COLORS = {}; }
+  try{ NV_TAG_COLORS = {}; (await dbSelect('novel_tag')).forEach(r=>{ if(r.category && /^#[0-9a-f]{3,8}$/i.test(r.image_url||'')) NV_TAG_COLORS[r.category.trim()] = r.image_url.trim(); }); }catch(e){ NV_TAG_COLORS = {}; }
   document.getElementById('statNovel').textContent = NOVELS.length;
-  const list = document.getElementById('epList');
-  if(!NOVELS.length){
-    list.innerHTML = `<div class="ep-item active">${escapeHtml(t('novel_empty','등록된 회차가 없습니다'))}</div>`;
-    document.getElementById('epReader').innerHTML = `<h3>—</h3><p>관리자에서 회차를 등록하면 이곳에 표시됩니다.</p>`;
-    return;
-  }
-  list.innerHTML = NOVELS.map((n,i)=>`<div class="ep-item ${i===0?'active':''}" data-id="${n.id}">${n.episode_no??''}화 · ${escapeHtml(n.title||'제목 미정')}</div>`).join('');
-  list.querySelectorAll('.ep-item').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      list.querySelectorAll('.ep-item').forEach(e=>e.classList.remove('active'));
-      el.classList.add('active');
-      renderEpisode(NOVELS.find(x=>String(x.id)===el.dataset.id));
-    });
-  });
-  renderEpisode(NOVELS[0]);
-}
-function renderEpisode(n){
-  document.getElementById('epReader').innerHTML =
-    `<h3>${n.episode_no??''}화 · ${escapeHtml(n.title||'제목 미정')}</h3><p>${escapeHtml(n.body||'').replace(/\n/g,'<br>')}</p>`;
+  document.getElementById('nvSearch').placeholder = t('novel_search','에피소드 키워드 검색');
+  renderNvChips(); renderNvList();
 }
 
 // ══════════════════════════════════════
