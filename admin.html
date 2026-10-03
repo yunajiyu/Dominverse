@@ -403,6 +403,31 @@ body{
         <div class="status" id="pf-status"></div>
       </div>
       <div class="list" id="list-profile"></div>
+
+      <div class="sub-title">공통 설명 영역 (프로필 카드 아래에 보이는 2칸 · 모든 AU 탭에 공통)</div>
+      <div class="card" data-section="profile_common">
+        <h3 id="pc-form-title">공통 설명 설정</h3>
+        <input type="hidden" id="pc-id">
+        <div class="field-row">
+          <div class="field">
+            <label>어느 영역? (고르면 저장된 내용이 불러와져요)</label>
+            <select id="pc-slot">
+              <option value="summary">1번 영역 (기본 라벨: 요약)</option>
+              <option value="intro">2번 영역 (기본 라벨: 소개)</option>
+            </select>
+          </div>
+          <div class="field"><label>라벨 (영역 제목)</label><input id="pc-label" placeholder="요약"></div>
+        </div>
+        <div class="field-row">
+          <div class="field full"><label>내용 (비우면 그 영역은 사이트에 표시되지 않아요)</label><textarea id="pc-body" style="min-height:120px" placeholder="모든 프로필에 공통으로 보이는 설명"></textarea></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('profile_common')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('profile_common')">취소</button>
+        </div>
+        <div class="status" id="pc-status"></div>
+      </div>
+      <div class="list" id="list-profile_common"></div>
     </div>
 
     <!-- 소설 -->
@@ -1044,6 +1069,14 @@ const SECTIONS = {
     idEl:'pf-id', statusEl:'pf-status', titleEl:'pf-form-title',
     render: (it)=> renderRow(it, it.character+' · '+(it.au_label||'기본'), it.summary||'', it.character)
   },
+  profile_common:{
+    fields:['category','title','body','sort_order'],
+    // 프로필 탭 아래 공통 설명: category = summary|intro, title = 라벨, body = 내용
+    read: ()=>({ category: val('pc-slot'), title: val('pc-label'), body: val('pc-body'), sort_order: val('pc-slot')==='summary' ? 0 : 1 }),
+    fill: (it)=>{ setval('pc-slot',it.category); setval('pc-label',it.title); setval('pc-body',it.body); },
+    idEl:'pc-id', statusEl:'pc-status', titleEl:'pc-form-title',
+    render: (it)=> renderRow(it, (it.title || ({summary:'요약', intro:'소개'}[it.category]) || '(라벨 없음)') + '  ['+({summary:'1번 영역', intro:'2번 영역'}[it.category]||it.category)+']', (it.body||'').slice(0,50))
+  },
   novel:{
     fields:['category','episode_no','title','summary','body'],
     read: ()=>({
@@ -1393,6 +1426,10 @@ async function submitItem(section){
     const ex = (CACHE.novel_genre || []).find(x=>(x.category||'').trim() === (row.category||'').trim());
     if(ex) idEl.value = ex.id;
   }
+  if(section==='profile_common' && !idEl.value){   // 영역마다 1개: 같은 영역이 있으면 그 항목을 수정
+    const ex = (CACHE.profile_common||[]).find(x=>x.category===row.category);
+    if(ex) idEl.value = ex.id;
+  }
   if(section==='menu_card' && !idEl.value){   // 같은 카드는 새로 만들지 않고 기존 항목을 교체
     const ex = (CACHE.menu_card||[]).find(x=>x.category===row.category);
     if(ex) idEl.value = ex.id;
@@ -1605,6 +1642,12 @@ function updateNgPreview(){
 }
 ['ng-value','ng-color','ng-category'].forEach(id=>document.getElementById(id).addEventListener('input', updateNgPreview));
 updateNgPreview();
+document.getElementById('pc-slot').addEventListener('change', ()=>{
+  const slot = document.getElementById('pc-slot').value;
+  const ex = (CACHE.profile_common||[]).find(x=>x.category===slot);
+  if(ex){ SECTIONS.profile_common.fill(ex); document.getElementById('pc-id').value = ex.id; }
+  else { setval('pc-label',''); setval('pc-body',''); document.getElementById('pc-id').value = ''; }
+});
 // 종류가 '단색'일 때만 색상 선택기를 보이고, '사진'일 때만 블러 슬라이더/파일 업로드를 보임
 // 정렬 순서 숫자 입력칸은 숨기고, 목록을 끌어서 순서를 정합니다
 document.querySelectorAll('input[id$="-order"]').forEach(i=>{ const f = i.closest('.field'); if(f) f.hidden = true; });
