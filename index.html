@@ -192,10 +192,11 @@ body{
   display:flex; flex-direction:column; min-height:0; overflow:hidden;
 }
 .avatar-box{
-  width:150px; height:150px; border-radius:50%;
+  width:150px; height:150px; border-radius:0;
   background:var(--paper-dim); border:1px solid var(--line);
   overflow:hidden;
 }
+.avatar-box.has-img{ background:transparent; border-color:transparent; }
 .avatar-box img{ width:100%; height:100%; object-fit:cover; display:block; }
 .site-title{ font-size:15px; font-weight:700; margin-top:4px; }
 .owner-tag{ font-size:11.5px; color:var(--ink-soft); }
@@ -880,6 +881,7 @@ async function loadMainProfile(){
     if(items.length && items[0].image_url){
       const im = document.getElementById('avatarImg');
       im.src = items[0].image_url; im.style.display = 'block';
+      im.parentElement.classList.add('has-img');
     }
   }catch(e){ /* 무시 */ }
 }
