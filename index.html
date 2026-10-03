@@ -472,9 +472,31 @@ body{
   .book-pages{ flex-direction:column; gap:0; }
   .book-rings{ display:none; }
   .profile-col{ display:none; }
-  .center-col{ border-radius:14px; box-shadow:none; }
+  .center-col{ border-radius:0; box-shadow:none; padding:6px 14px 18px; }
   .book-wrap::before{ display:none; }
-  .book-cover{ border-radius:0; }
+  .book-cover{ border-radius:16px; border:1px solid var(--book-border); box-shadow:none; }
+  .book-content{ padding:4px; }
+  /* 모바일 메인: 제목 줄 → menu 라벨 → 바인더 고리가 달린 2×2 메뉴 → 스티커 영역 → 날짜(왼쪽) */
+  .top-bar{ padding:14px 14px 6px; margin-bottom:0; }
+  .top-bar > span:first-child{ display:none; }
+  .content-top{ display:block; border-bottom:none; margin-bottom:24px; padding-bottom:0; }
+  .menu-cards{
+    position:relative; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:none; grid-auto-rows:64px; gap:8px;
+    width:auto; height:auto; padding:12px; border:1px solid var(--line); border-radius:16px; background:var(--paper);
+  }
+  .menu-cards::before, .menu-cards::after{
+    content:''; position:absolute; bottom:-14px; width:10px; height:28px; z-index:2;
+    border-radius:6px; background:var(--paper-dim); border:1px solid var(--line);
+  }
+  .menu-cards::before{ left:22px; }
+  .menu-cards::after{ right:22px; }
+  .menu-card{ justify-content:center; align-items:center; padding:0; text-align:center; }
+  .menu-card .mc-count{ display:none; }
+  .menu-card.has-img::before{ display:none; }
+  .menu-card.has-img::after{ opacity:1; }   /* 모바일은 호버가 없으니 오버레이를 항상 깔아 글자를 읽기 쉽게 */
+  .mc-title{ font-size:13px; }
+  .content-section[data-content="main"] > .main-image-frame{ flex:none; min-height:0; aspect-ratio:13/16; }
+  .today-date{ text-align:left; margin-top:10px; }
   .bgm-widget{ flex:0 0 auto; padding:6px 12px; }
   .bgm-title, .bgm-controls #bgmPrev, .bgm-controls #bgmNext{ display:none; }
   .bgm-controls{ margin:0; }
