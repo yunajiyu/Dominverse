@@ -360,6 +360,30 @@ body{
         <div class="status" id="mp-status"></div>
       </div>
       <div class="list" id="list-main_profile"></div>
+
+      <div class="sub-title">⑥ 파비콘 (브라우저 탭에 보이는 작은 아이콘)</div>
+      <div class="card" data-section="site_favicon">
+        <h3 id="fv-form-title">파비콘 설정</h3>
+        <input type="hidden" id="fv-id">
+        <div class="field-row">
+          <div class="field full">
+            <label>이미지 URL (또는 아래에서 파일 선택) — 정사각형 PNG 권장(예: 128×128px 이상), .ico·.svg도 가능해요. 저장하면 다시 저장할 때까지 이 아이콘이 쓰이고, 항목을 삭제하면 기본(아이콘 없음)으로 돌아가요</label>
+            <input id="fv-image" placeholder="https://...">
+            <div class="upload-row">
+              <input type="file" id="fv-file" accept="image/png,image/x-icon,image/vnd.microsoft.icon,image/svg+xml,image/jpeg,image/webp,image/gif,.ico">
+              <span class="upload-status" id="fv-file-status"></span>
+            </div>
+            <div class="fv-preview" id="fvPreview" style="display:flex;align-items:center;gap:10px;margin-top:8px;font-size:12px;color:var(--ink-soft)"><img id="fvPreviewImg" alt="" style="width:32px;height:32px;object-fit:contain;border:1px solid var(--line);border-radius:6px;background:#fff;display:none"><span id="fvPreviewTxt">미리보기 (탭에 보이는 크기)</span></div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('site_favicon')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('site_favicon')">취소</button>
+        </div>
+        <div class="status" id="fv-status"></div>
+        <p class="desc" style="margin-top:8px">※ 파비콘은 브라우저가 따로 보관해서, 저장 후 사이트를 새로고침해도 바로 안 바뀔 수 있어요(탭을 닫았다 다시 열면 바뀝니다).</p>
+      </div>
+      <div class="list" id="list-site_favicon"></div>
     </div>
 
     <!-- 프로필 -->
@@ -1007,6 +1031,13 @@ document.getElementById('sk-file').addEventListener('change', e=>{ const f = e.t
 document.getElementById('sk-walk-file').addEventListener('change', e=>{ const f = e.target; skUploadFiles(f.files, false, 'sk-walk-status').then(()=>{ f.value=''; }); });
 wireFileUpload('mp-file', 'mp-image', 'mp-file-status', 'mainprofile');
 wireFileUpload('ld-file', 'ld-image', 'ld-file-status', 'loading');
+wireFileUpload('fv-file', 'fv-image', 'fv-file-status', 'favicon');
+function updateFvPreview(){
+  const u = document.getElementById('fv-image').value.trim();
+  const im = document.getElementById('fvPreviewImg');
+  if(u){ im.src = u; im.style.display = 'block'; } else { im.removeAttribute('src'); im.style.display = 'none'; }
+}
+document.getElementById('fv-image').addEventListener('input', updateFvPreview);
 wireFileUpload('bg-file', 'bg-image', 'bg-file-status', 'bgm');
 wireFileUpload('bg-cover-file', 'bg-cover', 'bg-cover-file-status', 'bgmtrackcover');
 wireFileUpload('bc-file', 'bc-image', 'bc-file-status', 'bgmcover');
@@ -1248,6 +1279,13 @@ const SECTIONS = {
     idEl:'bc-id', statusEl:'bc-status', titleEl:'bc-form-title',
     render: (it)=> renderRow(it, 'BGM 커버 이미지', '')
   },
+  site_favicon:{
+    fields:['image_url','sort_order'],
+    read: ()=>({ image_url: val('fv-image'), sort_order: 0 }),
+    fill: (it)=>{ setval('fv-image',it.image_url); updateFvPreview(); },
+    idEl:'fv-id', statusEl:'fv-status', titleEl:'fv-form-title',
+    render: (it)=> renderRow(it, '파비콘', it.image_url || '')
+  },
   loading_logo:{
     fields:['image_url','title','sort_order'],
     read: ()=>({ image_url: val('ld-image'), title: val('ld-title'), sort_order: numval('ld-order') }),
@@ -1428,6 +1466,10 @@ async function submitItem(section){
   }
   if(section==='profile_common' && !idEl.value){   // 영역마다 1개: 같은 영역이 있으면 그 항목을 수정
     const ex = (CACHE.profile_common||[]).find(x=>x.category===row.category);
+    if(ex) idEl.value = ex.id;
+  }
+  if(section==='site_favicon' && !idEl.value){   // 파비콘은 1개만: 이미 있으면 그 항목을 교체
+    const ex = (CACHE.site_favicon||[])[0];
     if(ex) idEl.value = ex.id;
   }
   if(section==='menu_card' && !idEl.value){   // 같은 카드는 새로 만들지 않고 기존 항목을 교체
