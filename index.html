@@ -840,7 +840,7 @@ function startWander(){
     const img = el.querySelector('img');
     const frames = (img.dataset.walk || '').split('|').filter(Boolean);
     frames.forEach(u=>{ new Image().src = u; });   // 미리 불러오기
-    return { el, img, frames, fi:0, ft:0, x, y, hx:x, hy:y, tx:null, ty:null, wait:rand(.5,2.5), phase:rand(0,6), synced:true };
+    return { el, img, frames, bi:-1, bf:0, bt:rand(1.5,4), x, y, hx:x, hy:y, tx:null, ty:null, wait:rand(.5,2.5), phase:rand(0,6), synced:true };
   });
   let last = performance.now();
   function tick(now){
@@ -883,14 +883,19 @@ function startWander(){
         const dx = (st.tx-st.x)/100*W, dy = (st.ty-st.y)/100*H, dist = Math.hypot(dx,dy);
         const step = 28*(W/520)*dt;
         if(dist <= step){ st.x = st.tx; st.y = st.ty; st.tx = null; st.wait = rand(1.5,4); }
-        else { st.x += dx/dist*step/W*100; st.y += dy/dist*step/H*100; st.phase += dt*10; moving = true; bob = st.frames.length ? 0 : -Math.abs(Math.sin(st.phase))*3; }
+        else { st.x += dx/dist*step/W*100; st.y += dy/dist*step/H*100; st.phase += dt*10; moving = true; bob = -Math.abs(Math.sin(st.phase))*3; }
       }
       el.style.left = st.x + '%'; el.style.top = st.y + '%';
       st.img.style.transform = bob ? `translateY(${bob.toFixed(1)}px)` : '';
-      if(st.frames.length){   // 걷는 동안 프레임을 번갈아 보여주고, 멈추면 기본 이미지로
-        let want = st.img.dataset.idle;
-        if(moving){ st.ft += dt; if(st.ft >= .16){ st.ft = 0; st.fi = (st.fi+1) % st.frames.length; } want = st.frames[st.fi]; }
-        else { st.fi = 0; st.ft = 0; }
+      if(st.frames.length){   // 눈 깜빡임: 평소엔 기본 이미지, 2.5~5초마다 프레임을 빠르게 한 바퀴 보여주고 복귀
+        if(st.bi < 0){
+          st.bt -= dt;
+          if(st.bt <= 0){ st.bi = 0; st.bf = .14; }
+        } else {
+          st.bf -= dt;
+          if(st.bf <= 0){ st.bi++; st.bf = .14; if(st.bi >= st.frames.length){ st.bi = -1; st.bt = rand(2.5,5); } }
+        }
+        const want = st.bi >= 0 ? st.frames[st.bi] : st.img.dataset.idle;
         if(st.img.getAttribute('src') !== want) st.img.src = want;
       }
     });
