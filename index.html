@@ -234,14 +234,18 @@ body{
   display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:10px;
 }
 .menu-card{
-  position:relative; display:flex; align-items:center; justify-content:space-between; gap:8px;
-  min-height:0; padding:0 14px; overflow:hidden;
+  position:relative; display:flex; align-items:flex-end; justify-content:space-between; gap:8px;
+  min-height:0; padding:0 14px 8px; overflow:hidden;
   border:1px solid var(--line); border-radius:10px; cursor:pointer;
   background-size:cover; background-position:center; background-repeat:no-repeat;
   color:var(--ink); font:inherit; text-align:left;
 }
 .menu-card.menu-card.has-img{ color:#fff; }
 .menu-card.has-img .mc-title, .menu-card.has-img .mc-count{ text-shadow:0 1px 4px rgba(0,0,0,.55); }
+.menu-card.has-img::before{   /* 밝은 이미지에서도 제목이 읽히도록 아래쪽에 약한 그라데이션 */
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(to top, rgba(0,0,0,.5) 0%, rgba(0,0,0,.22) 45%, rgba(0,0,0,0) 85%);
+}
 .menu-card::after{
   content:''; position:absolute; inset:0; background:rgba(0,0,0,.4);
   opacity:0; transition:opacity .2s ease; pointer-events:none;
@@ -454,8 +458,8 @@ body{
 @media (max-width:900px){
   .index-tabs{ display:none; }
   .content-top{ flex-direction:column; }
-  .content-thumb{ width:140px; height:140px; align-self:flex-start; }
-  .menu-cards{ flex:none; width:100%; }
+  .content-thumb{ display:none; }   /* 모바일/태블릿: 미니 썸네일 없이 카드 4칸만 */
+  .menu-cards{ flex:none; width:100%; height:auto; grid-template-rows:none; grid-auto-rows:64px; }
 }
 
 /* ───────── 모바일 ───────── */
@@ -469,7 +473,6 @@ body{
   .book-rings{ display:none; }
   .profile-col{ display:none; }
   .center-col{ border-radius:14px; box-shadow:none; }
-  .menu-cards{ display:none; }
   .book-wrap::before{ display:none; }
   .book-cover{ border-radius:0; }
   .bgm-widget{ flex:0 0 auto; padding:6px 12px; }
