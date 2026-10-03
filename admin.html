@@ -403,6 +403,31 @@ body{
         <div class="status" id="pf-status"></div>
       </div>
       <div class="list" id="list-profile"></div>
+
+      <div class="sub-title">공통 설명 영역 (프로필 카드 아래에 보이는 2칸 · 모든 AU 탭에 공통)</div>
+      <div class="card" data-section="profile_common">
+        <h3 id="pc-form-title">공통 설명 설정</h3>
+        <input type="hidden" id="pc-id">
+        <div class="field-row">
+          <div class="field">
+            <label>어느 영역? (고르면 저장된 내용이 불러와져요)</label>
+            <select id="pc-slot">
+              <option value="summary">1번 영역 (기본 라벨: 요약)</option>
+              <option value="intro">2번 영역 (기본 라벨: 소개)</option>
+            </select>
+          </div>
+          <div class="field"><label>라벨 (영역 제목)</label><input id="pc-label" placeholder="요약"></div>
+        </div>
+        <div class="field-row">
+          <div class="field full"><label>내용 (비우면 그 영역은 사이트에 표시되지 않아요)</label><textarea id="pc-body" style="min-height:120px" placeholder="모든 프로필에 공통으로 보이는 설명"></textarea></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('profile_common')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('profile_common')">취소</button>
+        </div>
+        <div class="status" id="pc-status"></div>
+      </div>
+      <div class="list" id="list-profile_common"></div>
     </div>
 
     <!-- 소설 -->
@@ -417,6 +442,10 @@ body{
           <div class="field"><label>제목</label><input id="nv-title" placeholder="회차 제목"></div>
         </div>
         <div class="field-row">
+          <div class="field"><label>장르 (사이트의 필터 칩으로 표시됩니다)</label><input id="nv-category" list="nv-genre-list" placeholder="예: 로맨스, 일상, 판타지"><datalist id="nv-genre-list"></datalist></div>
+          <div class="field"><label>태그 (목록 오른쪽 · 비우면 '회차 번호+화')</label><input id="nv-tag" placeholder="예: 3화"></div>
+        </div>
+        <div class="field-row">
           <div class="field full"><label>본문</label><textarea id="nv-body" style="min-height:160px" placeholder="회차 본문"></textarea></div>
         </div>
         <div class="form-actions">
@@ -425,6 +454,36 @@ body{
         </div>
         <div class="status" id="nv-status"></div>
       </div>
+      <div class="card" data-section="novel_genre">
+        <h3 id="ng-form-title">장르 배지 색 추가</h3>
+        <p style="font-size:12px;color:var(--ink-soft);margin:0 0 12px;line-height:1.6">사이트 소설 목록의 장르 배지 색을 고릅니다. 지정하지 않은 장르는 자동 색이 쓰입니다. 장르마다 하나만 등록하세요.</p>
+        <input type="hidden" id="ng-id">
+        <div class="field-row">
+          <div class="field"><label>장르 이름 (소설에 입력한 장르와 똑같이)</label><input id="ng-category" list="nv-genre-list" placeholder="예: 1학년"></div>
+          <div class="field"><label>배지 색 (색상 선택기 또는 코드 예: #3b73f0)</label><input id="ng-value" placeholder="#3b73f0"><div class="color-row"><input type="color" id="ng-color" value="#3b73f0"><span id="ng-preview"></span></div></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('novel_genre')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('novel_genre')">취소</button>
+        </div>
+        <div class="status" id="ng-status"></div>
+      </div>
+      <div class="list" id="list-novel_genre" style="margin-bottom:18px"></div>
+      <div class="card" data-section="novel_tag">
+        <h3 id="nt-form-title">태그 글자색 추가</h3>
+        <p style="font-size:12px;color:var(--ink-soft);margin:0 0 12px;line-height:1.6">소설 목록 오른쪽 태그의 글자색을 고릅니다(배경은 그대로). 태그 문구(예: 외전, 2화)를 똑같이 적으면 그 태그만, <b>*</b> 를 적으면 지정하지 않은 모든 태그에 적용됩니다. 문구마다 하나만 등록하세요.</p>
+        <input type="hidden" id="nt-id">
+        <div class="field-row">
+          <div class="field"><label>태그 문구 (모든 태그는 * )</label><input id="nt-category" list="nv-tag-list" placeholder="예: 외전 또는 *"><datalist id="nv-tag-list"></datalist></div>
+          <div class="field"><label>글자색 (색상 선택기 또는 코드 예: #e0446a)</label><input id="nt-value" placeholder="#e0446a"><div class="color-row"><input type="color" id="nt-color" value="#e0446a"><span id="nt-preview"></span></div></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="submitItem('novel_tag')">저장</button>
+          <button class="btn btn-ghost" onclick="resetForm('novel_tag')">취소</button>
+        </div>
+        <div class="status" id="nt-status"></div>
+      </div>
+      <div class="list" id="list-novel_tag" style="margin-bottom:18px"></div>
       <div class="list" id="list-novel"></div>
     </div>
 
@@ -1010,14 +1069,22 @@ const SECTIONS = {
     idEl:'pf-id', statusEl:'pf-status', titleEl:'pf-form-title',
     render: (it)=> renderRow(it, it.character+' · '+(it.au_label||'기본'), it.summary||'', it.character)
   },
+  profile_common:{
+    fields:['category','title','body','sort_order'],
+    // 프로필 탭 아래 공통 설명: category = summary|intro, title = 라벨, body = 내용
+    read: ()=>({ category: val('pc-slot'), title: val('pc-label'), body: val('pc-body'), sort_order: val('pc-slot')==='summary' ? 0 : 1 }),
+    fill: (it)=>{ setval('pc-slot',it.category); setval('pc-label',it.title); setval('pc-body',it.body); },
+    idEl:'pc-id', statusEl:'pc-status', titleEl:'pc-form-title',
+    render: (it)=> renderRow(it, (it.title || ({summary:'요약', intro:'소개'}[it.category]) || '(라벨 없음)') + '  ['+({summary:'1번 영역', intro:'2번 영역'}[it.category]||it.category)+']', (it.body||'').slice(0,50))
+  },
   novel:{
-    fields:['episode_no','title','body'],
+    fields:['category','episode_no','title','summary','body'],
     read: ()=>({
-      episode_no: numval('nv-episode'), title: val('nv-title'), body: val('nv-body'), sort_order: numval('nv-episode')
+      category: val('nv-category'), summary: val('nv-tag'), episode_no: numval('nv-episode'), title: val('nv-title'), body: val('nv-body'), sort_order: numval('nv-episode')
     }),
-    fill: (it)=>{ setval('nv-episode',it.episode_no); setval('nv-title',it.title); setval('nv-body',it.body); },
+    fill: (it)=>{ setval('nv-category',it.category); setval('nv-tag',it.summary); setval('nv-episode',it.episode_no); setval('nv-title',it.title); setval('nv-body',it.body); },
     idEl:'nv-id', statusEl:'nv-status', titleEl:'nv-form-title',
-    render: (it)=> renderRow(it, (it.episode_no||'-')+'화 · '+(it.title||'제목 없음'), (it.body||'').slice(0,40))
+    render: (it)=> renderRow(it, (it.episode_no||'-')+'화 · '+(it.title||'제목 없음'), (it.category?'['+it.category+'] ':'')+(it.summary?'#'+it.summary+' ':'')+(it.body||'').slice(0,40))
   },
   gallery:{
     fields:['category','title','image_url','body','sort_order'],
@@ -1129,6 +1196,36 @@ const SECTIONS = {
           </div>
         </div>`;
     }
+  },
+  novel_genre:{
+    fields:['category','image_url','sort_order'],
+    read: ()=>({ category: val('ng-category'), image_url: val('ng-value'), sort_order: 0 }),
+    fill: (it)=>{ setval('ng-category',it.category); setval('ng-value',it.image_url); syncColorPicker('ng-value','ng-color'); updateNgPreview(); },
+    idEl:'ng-id', statusEl:'ng-status', titleEl:'ng-form-title',
+    render: (it)=> `
+    <div class="item-row">
+      <span class="noimg" style="background:${escapeHtml(it.image_url||'#ccc')}"></span>
+      <div class="item-meta"><b>${escapeHtml(it.category||'(장르 없음)')}</b><span>${escapeHtml(it.image_url||'')}</span></div>
+      <div class="item-actions">
+        <button onclick="editItem('novel_genre', ${it.id})">수정</button>
+        <button class="del" onclick="removeItem('novel_genre', ${it.id})">삭제</button>
+      </div>
+    </div>`
+  },
+  novel_tag:{
+    fields:['category','image_url','sort_order'],
+    read: ()=>({ category: val('nt-category'), image_url: val('nt-value'), sort_order: 0 }),
+    fill: (it)=>{ setval('nt-category',it.category); setval('nt-value',it.image_url); syncColorPicker('nt-value','nt-color'); updateNtPreview(); },
+    idEl:'nt-id', statusEl:'nt-status', titleEl:'nt-form-title',
+    render: (it)=> `
+    <div class="item-row">
+      <span class="noimg" style="background:${escapeHtml(it.image_url||'#ccc')}"></span>
+      <div class="item-meta"><b>${it.category==='*' ? '모든 태그 (기본)' : escapeHtml(it.category||'(태그 없음)')}</b><span>${escapeHtml(it.image_url||'')}</span></div>
+      <div class="item-actions">
+        <button onclick="editItem('novel_tag', ${it.id})">수정</button>
+        <button class="del" onclick="removeItem('novel_tag', ${it.id})">삭제</button>
+      </div>
+    </div>`
   },
   menu_thumb:{
     fields:['image_url','sort_order'],
@@ -1301,6 +1398,8 @@ async function loadSection(section){
     const items = await dbSelect(section);
     items.forEach(it=>it.__section = section);
     CACHE[section] = items;
+    if(section==='novel'){ const tl=document.getElementById('nv-tag-list'); if(tl) tl.innerHTML=[...new Set(items.map(x=>(x.summary||'').trim()||(x.episode_no?x.episode_no+'화':'')).filter(Boolean))].map(g=>`<option value="${g.replace(/"/g,'&quot;')}">`).join('');
+      const dl=document.getElementById('nv-genre-list'); if(dl) dl.innerHTML=[...new Set(items.map(x=>(x.category||'').trim()).filter(Boolean))].map(g=>`<option value="${g.replace(/"/g,'&quot;')}">`).join(''); }
     if(section==='sticker_bg') applyStickerBgPreview(items);
     if(items.length===0){
       listEl.innerHTML = `<div class="empty">등록된 항목이 없습니다.</div>`;
@@ -1319,6 +1418,18 @@ async function submitItem(section){
   const idEl = document.getElementById(cfg.idEl);
   const statusEl = document.getElementById(cfg.statusEl);
   const row = { section, ...cfg.read() };
+  if(section==='novel_tag' && !idEl.value){                 // 태그 문구마다 1개: 같은 문구가 있으면 그 항목을 수정
+    const ex = (CACHE.novel_tag || []).find(x=>(x.category||'').trim() === (row.category||'').trim());
+    if(ex) idEl.value = ex.id;
+  }
+  if(section==='novel_genre' && !idEl.value){               // 장르마다 1개: 같은 장르가 있으면 그 항목을 수정
+    const ex = (CACHE.novel_genre || []).find(x=>(x.category||'').trim() === (row.category||'').trim());
+    if(ex) idEl.value = ex.id;
+  }
+  if(section==='profile_common' && !idEl.value){   // 영역마다 1개: 같은 영역이 있으면 그 항목을 수정
+    const ex = (CACHE.profile_common||[]).find(x=>x.category===row.category);
+    if(ex) idEl.value = ex.id;
+  }
   if(section==='menu_card' && !idEl.value){   // 같은 카드는 새로 만들지 않고 기존 항목을 교체
     const ex = (CACHE.menu_card||[]).find(x=>x.category===row.category);
     if(ex) idEl.value = ex.id;
@@ -1509,6 +1620,34 @@ function wireColorPicker(textId, pickerId){
 wireColorPicker('pg-value','pg-color');
 wireColorPicker('sb-value','sb-color');
 wireColorPicker('th-value','th-color');
+wireColorPicker('ng-value','ng-color');
+wireColorPicker('nt-value','nt-color');
+function updateNtPreview(){
+  const v = document.getElementById('nt-value').value.trim() || document.getElementById('nt-color').value;
+  const g = document.getElementById('nt-category').value.trim() || '태그';
+  const pv = document.getElementById('nt-preview'); if(!pv) return;
+  pv.innerHTML = ''; const b = document.createElement('b');
+  b.textContent = g; b.style.cssText = 'font-size:11px;font-weight:400;color:'+v;
+  pv.appendChild(b);
+}
+['nt-value','nt-color','nt-category'].forEach(id=>document.getElementById(id).addEventListener('input', updateNtPreview));
+updateNtPreview();
+function updateNgPreview(){
+  const v = document.getElementById('ng-value').value.trim() || document.getElementById('ng-color').value;
+  const g = document.getElementById('ng-category').value.trim() || '장르';
+  const pv = document.getElementById('ng-preview'); if(!pv) return;
+  pv.innerHTML = ''; const b = document.createElement('b');
+  b.textContent = g; b.style.cssText = 'display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;color:'+v+';background:color-mix(in srgb, '+v+' 18%, #fff)';
+  pv.appendChild(b);
+}
+['ng-value','ng-color','ng-category'].forEach(id=>document.getElementById(id).addEventListener('input', updateNgPreview));
+updateNgPreview();
+document.getElementById('pc-slot').addEventListener('change', ()=>{
+  const slot = document.getElementById('pc-slot').value;
+  const ex = (CACHE.profile_common||[]).find(x=>x.category===slot);
+  if(ex){ SECTIONS.profile_common.fill(ex); document.getElementById('pc-id').value = ex.id; }
+  else { setval('pc-label',''); setval('pc-body',''); document.getElementById('pc-id').value = ''; }
+});
 // 종류가 '단색'일 때만 색상 선택기를 보이고, '사진'일 때만 블러 슬라이더/파일 업로드를 보임
 // 정렬 순서 숫자 입력칸은 숨기고, 목록을 끌어서 순서를 정합니다
 document.querySelectorAll('input[id$="-order"]').forEach(i=>{ const f = i.closest('.field'); if(f) f.hidden = true; });
@@ -1560,7 +1699,9 @@ const TEXT_KEYS = [
   {g:'오른쪽 패널 · 기타', k:'bgm_empty', l:'BGM이 없을 때', d:'등록된 곡이 없습니다'},
   {g:'오른쪽 패널 · 기타', k:'anniv_suffix', l:'기념일 일수 뒤 글자 (예: 123일째)', d:'일째'},
   {g:'오른쪽 패널 · 기타', k:'profile_empty', l:'프로필이 없을 때 안내', d:'관리자에서 프로필을 등록하면 이곳에 표시됩니다.'},
-  {g:'오른쪽 패널 · 기타', k:'novel_empty', l:'소설 회차가 없을 때', d:'등록된 회차가 없습니다'}
+  {g:'오른쪽 패널 · 기타', k:'novel_empty', l:'소설 회차가 없을 때', d:'등록된 회차가 없습니다'},
+  {g:'오른쪽 패널 · 기타', k:'novel_search', l:'소설 검색창 안내 문구', d:'에피소드 키워드 검색'},
+  {g:'오른쪽 패널 · 기타', k:'novel_all', l:'소설 장르 필터의 "전체" 칩', d:'전체'}
 ];
 const TEXT_LEGACY = { label_novel:'nav_novel', label_doodle:'nav_doodle', label_commission:'nav_commission', label_profile:'nav_profile' };
 let TEXT_ROWS = {};
