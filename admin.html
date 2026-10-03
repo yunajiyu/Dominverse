@@ -455,7 +455,7 @@ body{
       </div>
       <div class="list" id="list-profile"></div>
 
-      <div class="sub-title">설명 영역 (프로필 카드 아래에 보이는 2칸 · AU 라벨별로 따로, 비우면 공통)</div>
+      <div class="sub-title">설명 영역 (프로필 카드 아래에 원하는 만큼 추가 · AU 라벨별로 따로, 비우면 공통)</div>
       <div class="card" data-section="profile_common">
         <h3 id="pc-form-title">설명 영역 설정</h3>
         <input type="hidden" id="pc-id">
@@ -467,7 +467,7 @@ body{
         </div>
         <div class="field-row">
           <div class="field">
-            <label>몇 번째 영역? — 1번(기본 라벨 요약), 2번(소개), 3번 이상은 자유롭게 추가해요. 번호 순서대로 보이고, AU와 번호를 적으면 저장된 내용이 불러와져요</label>
+            <label>순서 번호 — 숫자가 작을수록 위에 보여요(같은 번호는 먼저 저장한 순). 저장할 때마다 새 영역이 추가되고, 기존 영역을 고치려면 아래 목록에서 '수정'을 누르세요. 1번·2번 라벨을 비우면 기본 라벨(요약·소개)이 쓰여요</label>
             <input id="pc-slot" type="number" min="1" step="1" value="1" placeholder="1">
           </div>
           <div class="field"><label>라벨 (영역 제목)</label><input id="pc-label" placeholder="요약"></div>
@@ -1504,10 +1504,6 @@ async function submitItem(section){
     const ex = (CACHE.novel_genre || []).find(x=>(x.category||'').trim() === (row.category||'').trim());
     if(ex) idEl.value = ex.id;
   }
-  if(section==='profile_common' && !idEl.value){   // 영역마다 1개: 같은 영역이 있으면 그 항목을 수정
-    const ex = (CACHE.profile_common||[]).find(x=>x.category===row.category && (x.au_label||'').trim()===(row.au_label||'').trim());
-    if(ex) idEl.value = ex.id;
-  }
   if(section==='site_og' && !idEl.value){   // 링크 미리보기는 1개만: 이미 있으면 그 항목을 교체
     const ex = (CACHE.site_og||[])[0];
     if(ex) idEl.value = ex.id;
@@ -1733,15 +1729,6 @@ updateNgPreview();
 function pcSlotNum(){ const n = parseInt(document.getElementById('pc-slot').value, 10); return n >= 1 ? n : 1; }
 function pcSlotKey(n){ return n === 1 ? 'summary' : n === 2 ? 'intro' : 'slot' + n; }
 function pcNumOf(cat){ return cat === 'summary' ? 1 : cat === 'intro' ? 2 : (parseInt(String(cat||'').replace('slot',''), 10) || 1); }
-function pcPrefill(){
-  const slot = pcSlotKey(pcSlotNum()), au = document.getElementById('pc-au').value.trim();
-  const ex = (CACHE.profile_common||[]).find(x=>x.category===slot && (x.au_label||'').trim()===au);
-  if(ex){ setval('pc-label',ex.title); setval('pc-body',ex.body); document.getElementById('pc-id').value = ex.id; }
-  else { setval('pc-label',''); setval('pc-body',''); document.getElementById('pc-id').value = ''; }
-}
-document.getElementById('pc-slot').addEventListener('change', pcPrefill);
-document.getElementById('pc-slot').addEventListener('input', pcPrefill);
-document.getElementById('pc-au').addEventListener('change', pcPrefill);
 // 종류가 '단색'일 때만 색상 선택기를 보이고, '사진'일 때만 블러 슬라이더/파일 업로드를 보임
 // 정렬 순서 숫자 입력칸은 숨기고, 목록을 끌어서 순서를 정합니다
 document.querySelectorAll('input[id$="-order"]').forEach(i=>{ const f = i.closest('.field'); if(f) f.hidden = true; });
